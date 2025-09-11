@@ -102,8 +102,8 @@ export function LatestAnnouncements() {
 
         {/* Announcements Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sortedAnnouncements.map((announcement, index) => (
-            <Link 
+          {sortedAnnouncements.map((announcement, _index) => (
+            <Link
               key={announcement.id}
               href={`/announcements/${announcement.slug}`}
               className="group block"

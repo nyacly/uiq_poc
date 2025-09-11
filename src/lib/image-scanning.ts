@@ -180,13 +180,13 @@ export async function batchScanImages(requests: ScanImageRequest[]): Promise<Ima
 export async function getImageScanResults(
   contentType: string,
   contentId: string
-): Promise<any[]> {
+): Promise<ImageScanResult[]> {
   try {
     return await db
       .select()
       .from(imageScanResults)
       .where(
-        eq(imageScanResults.contentType, contentType as any) &&
+        eq(imageScanResults.contentType, contentType) &&
         eq(imageScanResults.contentId, contentId)
       )
       .orderBy(imageScanResults.createdAt)
@@ -283,7 +283,7 @@ export async function rejectImageScan(
 }
 
 // Get pending image scans for moderation
-export async function getPendingImageScans(limit: number = 50): Promise<any[]> {
+export async function getPendingImageScans(limit: number = 50): Promise<ImageScanResult[]> {
   try {
     return await db
       .select()
@@ -323,7 +323,7 @@ export function isValidImageUrl(url: string): boolean {
     
     return (urlObj.protocol === 'https:' || urlObj.protocol === 'http:') && 
            (hasImageExtension || isTrustedDomain)
-  } catch (error) {
+  } catch {
     return false
   }
 }

@@ -57,13 +57,14 @@ export async function GET() {
     return NextResponse.json(health, { status: 200 });
     
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     console.error('Health check failed:', error);
     
     const healthError = {
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
       responseTime: `${Date.now() - startTime}ms`,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: errorMessage,
       checks: {
         database: { status: 'error', error: 'Failed to check' },
         stripe: { status: 'unknown' },
@@ -80,7 +81,7 @@ export async function GET() {
 async function checkDatabase() {
   try {
     // Simple query to check database connectivity
-    const result = await db.execute('SELECT 1 as health_check');
+    await db.execute('SELECT 1 as health_check');
     
     return {
       status: 'healthy',
@@ -88,9 +89,10 @@ async function checkDatabase() {
       message: 'Database connection successful'
     };
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Database connection failed'
     return {
       status: 'error',
-      error: error instanceof Error ? error.message : 'Database connection failed'
+      error: errorMessage
     };
   }
 }
@@ -120,9 +122,10 @@ async function checkStripe() {
       };
     }
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Stripe check failed'
     return {
       status: 'error',
-      error: error instanceof Error ? error.message : 'Stripe check failed'
+      error: errorMessage
     };
   }
 }
@@ -156,9 +159,10 @@ async function checkTwilio() {
       };
     }
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Twilio check failed'
     return {
       status: 'error',
-      error: error instanceof Error ? error.message : 'Twilio check failed'
+      error: errorMessage
     };
   }
 }
@@ -188,9 +192,10 @@ async function checkMemoryUsage() {
       details: usage
     };
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Memory check failed'
     return {
       status: 'error',
-      error: error instanceof Error ? error.message : 'Memory check failed'
+      error: errorMessage
     };
   }
 }
@@ -209,7 +214,7 @@ async function checkDiskSpace() {
         modified: stats.mtime
       }
     };
-  } catch (error) {
+  } catch {
     return {
       status: 'warning',
       message: 'Could not check disk space in this environment'

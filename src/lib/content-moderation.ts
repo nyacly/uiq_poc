@@ -4,7 +4,7 @@
  */
 
 import { db, moderationRules, flaggedContent, auditLogs } from './db'
-import { eq, and, inArray } from 'drizzle-orm'
+import { eq, and } from 'drizzle-orm'
 
 interface ModerationResult {
   isAllowed: boolean
@@ -20,6 +20,23 @@ interface ContentItem {
   type: 'business' | 'listing' | 'message' | 'review' | 'announcement' | 'event' | 'user_profile'
   text: string
   userId?: string
+}
+
+interface ModerationRule {
+    id: string;
+    name: string;
+    description: string | null;
+    keywords: string[];
+    contentTypes: string[];
+    severity: 'low' | 'medium' | 'high' | 'critical';
+    action: 'allow' | 'flag' | 'block' | 'auto_remove';
+    isActive: boolean;
+    caseSensitive: boolean;
+    wholeWordOnly: boolean;
+    regex: string | null;
+    exemptRoles: string[] | null;
+    createdAt: Date;
+    updatedAt: Date | null;
 }
 
 // Default spam/scam keywords and patterns
@@ -150,10 +167,10 @@ export async function moderateContent(content: ContentItem): Promise<ModerationR
       }
     }
 
-    let flaggedKeywords: string[] = []
+    const flaggedKeywords: string[] = []
     let highestSeverity: 'low' | 'medium' | 'high' | 'critical' = 'low'
     let finalAction: 'allow' | 'flag' | 'block' | 'auto_remove' = 'allow'
-    let triggeredRule: any = null
+    let triggeredRule: ModerationRule | null = null
 
     const contentText = content.text.toLowerCase()
 
@@ -232,7 +249,7 @@ export async function moderateContent(content: ContentItem): Promise<ModerationR
 // Log flagged content for review
 async function logFlaggedContent(
   content: ContentItem,
-  rule: any,
+  rule: ModerationRule,
   flaggedKeywords: string[],
   severity: string
 ): Promise<void> {
@@ -269,7 +286,7 @@ async function logFlaggedContent(
 }
 
 // Get moderation rules (for admin interface)
-export async function getModerationRules(): Promise<any[]> {
+export async function getModerationRules(): Promise<ModerationRule[]> {
   try {
     return await db
       .select()
@@ -320,7 +337,7 @@ export async function createModerationRule(ruleData: {
 // Update moderation rule
 export async function updateModerationRule(
   ruleId: string,
-  updates: Partial<any>
+  updates: Partial<ModerationRule>
 ): Promise<{ success: boolean; message: string }> {
   try {
     await db
@@ -365,7 +382,7 @@ export async function deleteModerationRule(ruleId: string): Promise<{ success: b
 export async function getFlaggedContent(
   status?: 'pending' | 'approved' | 'rejected' | 'flagged' | 'removed',
   limit: number = 50
-): Promise<any[]> {
+): Promise<ModerationRule[]> {
   try {
     const conditions = []
     if (status) {

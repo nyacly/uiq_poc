@@ -51,7 +51,7 @@ export async function initializeStripeIntegration(): Promise<void> {
     
     // Log product pricing for reference
     console.log('\n📋 Available Products:')
-    Object.entries(PRODUCT_DEFINITIONS).forEach(([key, product]) => {
+    Object.entries(PRODUCT_DEFINITIONS).forEach(([_key, product]) => {
       if (product.tier === 'free') {
         console.log(`  • ${product.name}: Free`)
       } else if ('price' in product) {

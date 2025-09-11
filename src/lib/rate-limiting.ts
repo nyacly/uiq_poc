@@ -5,6 +5,7 @@
 
 import { db, rateLimits } from './db'
 import { eq, and, gt, lte } from 'drizzle-orm'
+import type { NextApiRequest, NextApiResponse } from 'next'
 
 interface RateLimitConfig {
   windowMs: number    // Time window in milliseconds
@@ -188,8 +189,8 @@ export function createRateLimitMiddleware(
   config?: RateLimitConfig
 ) {
   return async function rateLimitMiddleware(
-    req: any,
-    res: any,
+    req: NextApiRequest,
+    res: NextApiResponse,
     next?: () => void
   ) {
     const identifier = getClientIdentifier(req)
@@ -223,10 +224,10 @@ export function createRateLimitMiddleware(
 }
 
 // Get client identifier (IP or user ID)
-function getClientIdentifier(req: any): string {
+function getClientIdentifier(req: NextApiRequest): string {
   // Try to get user ID first (for authenticated requests)
-  if (req.user?.id) {
-    return `user:${req.user.id}`
+  if ((req as any).user?.id) {
+    return `user:${(req as any).user.id}`
   }
 
   // Fall back to IP address

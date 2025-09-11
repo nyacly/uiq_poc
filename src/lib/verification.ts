@@ -6,6 +6,7 @@
 import { db, userVerifications, users } from './db'
 import { eq, and, gt } from 'drizzle-orm'
 import crypto from 'crypto'
+import twilio from 'twilio'
 
 interface VerificationResult {
   success: boolean
@@ -136,7 +137,6 @@ export async function sendVerificationSMS(
 ): Promise<{ success: boolean; message: string }> {
   try {
     // Import Twilio client
-    const twilio = require('twilio')
     const client = twilio(
       process.env.TWILIO_ACCOUNT_SID,
       process.env.TWILIO_AUTH_TOKEN
@@ -288,17 +288,6 @@ export async function getUserVerificationStatus(userId: string): Promise<{
     }
 
     const userData = user[0]
-
-    // Check for verified email and phone separately
-    const verifications = await db
-      .select()
-      .from(userVerifications)
-      .where(
-        and(
-          eq(userVerifications.userId, userId),
-          eq(userVerifications.verifiedAt, null) // This should be NOT NULL for verified
-        )
-      )
 
     const emailVerified = !!userData.email && userData.isVerified
     const phoneVerified = !!userData.phone && userData.isVerified

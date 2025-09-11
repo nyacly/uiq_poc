@@ -1,9 +1,10 @@
 import { Metadata } from 'next'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { FilterBar } from '@/components/ui/FilterBar'
 import { MapModule } from '@/components/ui/MapModule'
-import { getAllCityPages, QUEENSLAND_CITIES, BUSINESS_CATEGORIES } from '@/lib/seo-data'
+import { QUEENSLAND_CITIES, BUSINESS_CATEGORIES } from '@/lib/seo-data'
 import { SchemaOrgUtils, BreadcrumbSchema, LocalBusinessSchema } from '@/lib/schema-org'
 
 interface Props {
@@ -128,13 +129,13 @@ export default function CityPage({ params }: Props) {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <ol className="flex items-center space-x-2 py-4 text-sm">
               <li>
-                <a href="/" className="text-blue-600 hover:text-blue-800 font-medium">Home</a>
+                <Link href="/" className="text-blue-600 hover:text-blue-800 font-medium">Home</Link>
               </li>
               <li className="flex items-center">
                 <svg className="flex-shrink-0 h-4 w-4 text-gray-400 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
-                <a href="/directory" className="text-blue-600 hover:text-blue-800 font-medium">Directory</a>
+                <Link href="/directory" className="text-blue-600 hover:text-blue-800 font-medium">Directory</Link>
               </li>
               <li className="flex items-center">
                 <svg className="flex-shrink-0 h-4 w-4 text-gray-400 mx-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -196,12 +197,12 @@ export default function CityPage({ params }: Props) {
             <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
               Browse by Category
             </h2>
-            <div 
+            <div
               className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
               data-testid={`categories-grid-${params.city}`}
             >
               {BUSINESS_CATEGORIES.slice(0, 12).map((category) => (
-                <a
+                <Link
                   key={category.slug}
                   href={`/au/${params.city}/${category.slug}`}
                   className="group bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
@@ -218,18 +219,18 @@ export default function CityPage({ params }: Props) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
-                </a>
+                </Link>
               ))}
             </div>
             
             {BUSINESS_CATEGORIES.length > 12 && (
               <div className="text-center mt-8">
-                <a
+                <Link
                   href={`/directory?city=${cityData.name}`}
                   className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
                 >
                   View All Categories
-                </a>
+                </Link>
               </div>
             )}
           </div>

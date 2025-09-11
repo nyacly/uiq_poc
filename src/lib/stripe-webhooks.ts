@@ -19,9 +19,10 @@ export async function handleStripeWebhook(
   try {
     // Verify webhook signature
     event = stripe.webhooks.constructEvent(body, signature, endpointSecret)
-  } catch (err: any) {
-    console.error('Webhook signature verification failed:', err.message)
-    return { received: false, error: `Webhook Error: ${err.message}` }
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+    console.error('Webhook signature verification failed:', errorMessage)
+    return { received: false, error: `Webhook Error: ${errorMessage}` }
   }
 
   try {
@@ -42,7 +43,7 @@ export async function handleStripeWebhook(
       stripeEventId: event.id,
       eventType: event.type,
       processed: false,
-      eventData: event.data as any,
+      eventData: event.data,
       attempts: 1
     }).onConflictDoUpdate({
       target: stripeWebhookEvents.stripeEventId,
@@ -67,8 +68,9 @@ export async function handleStripeWebhook(
     console.log(`Successfully processed webhook event: ${event.type}`)
     return { received: true }
 
-  } catch (error: any) {
-    console.error('Error processing webhook:', error)
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('Error processing webhook:', errorMessage)
 
     // Update error in webhook events log
     await db
@@ -297,7 +299,6 @@ async function handleInvoicePaymentActionRequired(invoice: Stripe.Invoice): Prom
 // Checkout event handlers
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
   try {
-    const customerId = session.customer as string
     const subscriptionId = session.subscription as string | null
     const paymentIntentId = session.payment_intent as string | null
 
@@ -409,8 +410,8 @@ async function handleCustomerUpdated(customer: Stripe.Customer): Promise<void> {
 
 // Helper functions for one-time product purchases
 async function handleOneTimeProductPurchase(
-  session: Stripe.Checkout.Session, 
-  paymentIntent: Stripe.PaymentIntent
+  session: Stripe.Checkout.Session,
+  _paymentIntent: Stripe.PaymentIntent
 ): Promise<void> {
   try {
     const metadata = session.metadata || {}
@@ -418,7 +419,6 @@ async function handleOneTimeProductPurchase(
     
     if (productType === 'listing_boost') {
       const listingId = metadata.listingId
-      const userId = metadata.userId
       
       if (listingId) {
         // Apply listing boost (7 days featured placement)

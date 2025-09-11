@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createCheckoutSession } from '@/lib/stripe'
 import { auth } from '@/lib/auth'
-import { createRateLimitMiddleware } from '@/lib/rate-limiting'
 import { db, stripePrices, businesses } from '@/lib/db'
 import { eq, and } from 'drizzle-orm'
 

@@ -70,12 +70,12 @@ export function formatPhone(phone: string): string {
 /**
  * Debounce function for search inputs
  */
-export function debounce<T extends (...args: any[]) => any>(
-  func: T,
+export function debounce<F extends (...args: any[]) => any>(
+  func: F,
   wait: number
-): (...args: Parameters<T>) => void {
+): (...args: Parameters<F>) => void {
   let timeout: NodeJS.Timeout
-  return (...args: Parameters<T>) => {
+  return (...args: Parameters<F>) => {
     clearTimeout(timeout)
     timeout = setTimeout(() => func(...args), wait)
   }

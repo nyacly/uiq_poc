@@ -1,5 +1,6 @@
 // UiQ Upcoming Events Section
 import Link from 'next/link'
+import Image from 'next/image'
 import { Badge } from '@/components/ui/Badge'
 
 // Mock data using our sample events from database
@@ -110,10 +111,13 @@ export function UpcomingEvents() {
               <article className="bg-white border border-surface-200 rounded-2xl overflow-hidden hover:shadow-card-hover hover:border-primary-300 transition-all duration-300">
                 {/* Event Image */}
                 <div className="relative h-48 bg-surface-200">
-                  <img
+                  <Image
                     src={event.image}
                     alt={event.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    layout="fill"
+                    objectFit="cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    className="group-hover:scale-105 transition-transform duration-500"
                   />
                   
                   {/* Date Badge */}

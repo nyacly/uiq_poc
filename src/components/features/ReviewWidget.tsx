@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { Star, ThumbsUp, Camera, X, Filter, ChevronDown, Flag, Shield, Image as ImageIcon } from 'lucide-react'
+import { useState, useRef } from 'react'
+import Image from 'next/image'
+import { Star, ThumbsUp, Camera, X, ChevronDown, Flag, Shield } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
 import { Modal } from '../ui/Modal'
@@ -362,9 +363,11 @@ export function ReviewWidget({
                   className="aspect-square bg-gray-100 rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
                   onClick={() => setShowPhotoGrid(true)}
                 >
-                  <img
+                  <Image
                     src={photo.url}
                     alt={photo.alt}
+                    width={100}
+                    height={100}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -403,7 +406,7 @@ export function ReviewWidget({
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
                     {review.userAvatar ? (
-                      <img src={review.userAvatar} alt={review.userName} className="w-full h-full rounded-full object-cover" />
+                      <Image src={review.userAvatar} alt={review.userName} width={40} height={40} className="w-full h-full rounded-full object-cover" />
                     ) : (
                       <span className="text-sm font-semibold text-gray-600">
                         {review.userName.charAt(0).toUpperCase()}
@@ -444,12 +447,14 @@ export function ReviewWidget({
                         className="flex-shrink-0 w-20 h-20 bg-gray-100 rounded-lg overflow-hidden cursor-pointer"
                         onClick={() => {
                           setSelectedPhotos(review.photos)
-                          setShowPhotoGrid(true)
+                          setShowPhotoG(true)
                         }}
                       >
-                        <img
+                        <Image
                           src={photo.url}
                           alt={photo.alt}
+                          width={80}
+                          height={80}
                           className="w-full h-full object-cover"
                         />
                       </div>
@@ -584,9 +589,11 @@ export function ReviewWidget({
                 <div className="grid grid-cols-4 gap-2 mt-3">
                   {newReview.photos.map((file, index) => (
                     <div key={index} className="relative">
-                      <img
+                      <Image
                         src={URL.createObjectURL(file)}
                         alt={`Preview ${index + 1}`}
+                        width={80}
+                        height={80}
                         className="w-full h-20 object-cover rounded-lg"
                       />
                       <button
@@ -644,9 +651,11 @@ export function ReviewWidget({
         <div className="grid grid-cols-3 gap-4">
           {(selectedPhotos.length > 0 ? selectedPhotos : allPhotos).map((photo) => (
             <div key={photo.id} className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-              <img
+              <Image
                 src={photo.url}
                 alt={photo.alt}
+                width={200}
+                height={200}
                 className="w-full h-full object-cover"
               />
             </div>

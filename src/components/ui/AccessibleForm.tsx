@@ -10,7 +10,7 @@ import {
   ReactNode
 } from 'react'
 import { cn } from '@/lib/utils'
-import { screenReader, LiveRegion } from '@/lib/accessibility'
+import { LiveRegion } from '@/lib/accessibility'
 
 // Form Field Container
 interface FormFieldProps {

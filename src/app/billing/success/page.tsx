@@ -9,12 +9,13 @@ export default function BillingSuccessPage() {
   const searchParams = useSearchParams()
   const sessionId = searchParams.get('session_id')
   const [loading, setLoading] = useState(true)
-  const [sessionData, setSessionData] = useState<any>(null)
 
   useEffect(() => {
     if (sessionId) {
       // In a real implementation, you might fetch session details
       // For now, we'll just show a success message
+      setLoading(false)
+    } else {
       setLoading(false)
     }
   }, [sessionId])
@@ -71,13 +72,13 @@ export default function BillingSuccessPage() {
         {/* Next Steps */}
         <div className="space-y-4">
           <div className="text-left">
-            <h3 className="text-sm font-medium text-gray-900 mb-3">What's next?</h3>
+            <h3 className="text-sm font-medium text-gray-900 mb-3">What&apos;s next?</h3>
             <ul className="text-sm text-gray-600 space-y-2">
               <li className="flex items-center">
                 <svg className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                You'll receive a receipt via email
+                You&apos;ll receive a receipt via email
               </li>
               <li className="flex items-center">
                 <svg className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
