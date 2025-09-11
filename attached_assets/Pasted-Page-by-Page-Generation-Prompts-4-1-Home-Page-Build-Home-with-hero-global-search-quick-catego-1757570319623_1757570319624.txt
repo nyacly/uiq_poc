@@ -1,0 +1,54 @@
+Page‑by‑Page Generation Prompts
+4.1 Home Page
+
+""" Build Home with: hero global search; quick category tiles (Directory, Events, Announcements, Classifieds); featured businesses (carousel); upcoming events; latest announcements (bereavements pinned); programs & opportunities highlights; CTA to join WhatsApp; membership perks strip; newsletter signup; footer with sitemap. Add schema.org, breadcrumb JSON‑LD, and SEO‑ready sections. Provide responsive breakpoints. """
+
+4.2 Directory List + Map
+
+""" Build Directory List page with:
+
+Sticky FilterBar (location picker + distance, categories, competence tags, rating, verified toggle, price range).
+
+Map/List toggle with map markers clustering; cards show name, badges, rating, distance, competence chips, quick actions (Call, WhatsApp, Save, Message).
+
+Empty state & skeleton loaders. Implement pagination/infinite scroll and server‑side filtering hooks. """
+
+4.3 Business Detail
+
+""" Build Business Detail page:
+
+Gallery, badges, about, competence & certifications, service area map, hours, contact buttons, share, save, report.
+
+Lead form (name, email/phone, message, preferred time); show success state.
+
+Reviews section with rating summary, photos, and write‑a‑review modal (rate‑limit + moderation notice).
+
+Panel for subscription plan info (if owner). """
+
+4.4 Events (List + Detail)
+
+""" Build Events list with filters (date range, category, price, location). Event detail page with RSVP, ICS export, reminder signup, venue map, organiser profile, share buttons, and accessibility info. """
+
+4.5 Announcements (incl. Bereavements)
+
+""" Build Announcements with tabs (Bereavements, Weddings, Births, Achievements, Notices). Detail view for Bereavement includes obituary, ceremony timeline, and Contribution panel that links out to secure web checkout; include pledge counter (client‑side) and transparency updates. Add verification flag UI. """
+
+4.6 Programs & Opportunities
+
+""" Build Programs & Opportunities with filters (eligibility, deadline, location, type) and saved searches. Detail pages include Apply links and reminder toggles. """
+
+4.7 Classifieds & Housing
+
+""" Build Classifieds with tabs (For Sale, Housing, Gigs). Listing detail shows price, photos, safety tips, and contact/message CTA. Include Boost purchase entry point (web checkout) and report/block. """
+
+4.8 Membership & Checkout (Web)
+
+""" Build Membership page that compares Free vs Plus vs Family perks; integrates web checkout (Stripe). After success, update user entitlement and show confirmation. Include FAQs and refund/cancellation info. """
+
+4.9 My Account & Messaging
+
+""" Build My Account with profile editor, membership status, payments, saved items, my content (business/events/listings/announcements), and Messages inbox/thread with attachments, report/block, and read receipts. """
+
+4.10 Admin & Moderation
+
+""" Build Admin: queues for approvals (announcements—bereavements flagged), reported content, users, payouts ledger (read‑only), role management, site settings, pages. Include audit log and exports. """

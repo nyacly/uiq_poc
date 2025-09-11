@@ -1,0 +1,37 @@
+// Authentication hook for Community Platform
+// Using integration blueprint: javascript_log_in_with_replit
+
+'use client'
+import { useQuery } from "@tanstack/react-query"
+
+export function useAuth() {
+  const { data: user, isLoading, error } = useQuery({
+    queryKey: ["/api/auth/user"],
+    queryFn: async () => {
+      const response = await fetch("/api/auth/user", {
+        credentials: "include"
+      })
+      if (!response.ok) {
+        if (response.status === 401) {
+          return null // User not authenticated
+        }
+        throw new Error(`Failed to fetch user: ${response.status}`)
+      }
+      return response.json()
+    },
+    retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  })
+
+  return {
+    user,
+    isLoading,
+    isAuthenticated: !!user,
+    error
+  }
+}
+
+// Utility function to check if error is unauthorized
+export function isUnauthorizedError(error: Error): boolean {
+  return /^401: .*Unauthorized/.test(error.message)
+}

@@ -1,0 +1,81 @@
+'use client'
+
+import { useState } from 'react'
+import { AccessibleButton } from '@/components/ui/AccessibleButton'
+import { useToast } from '@/hooks/use-toast'
+
+interface BillingPortalButtonProps {
+  businessId?: string
+  className?: string
+  children?: React.ReactNode
+  variant?: 'primary' | 'secondary' | 'outline'
+}
+
+export function BillingPortalButton({
+  businessId,
+  className,
+  children,
+  variant = 'outline'
+}: BillingPortalButtonProps) {
+  const [loading, setLoading] = useState(false)
+  const { toast } = useToast()
+
+  const handleOpenPortal = async () => {
+    try {
+      setLoading(true)
+
+      const response = await fetch('/api/stripe/billing-portal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          businessId,
+          returnUrl: window.location.href
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          toast({
+            title: "No Billing Information",
+            description: "Please subscribe to a plan first to manage your billing.",
+            variant: "destructive",
+          })
+          return
+        }
+        throw new Error(data.error || 'Failed to open billing portal')
+      }
+
+      // Redirect to Stripe billing portal
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        throw new Error('No billing portal URL returned')
+      }
+
+    } catch (error: any) {
+      console.error('Billing portal error:', error)
+      toast({
+        title: "Billing Portal Error",
+        description: error.message || "Failed to open billing portal. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <AccessibleButton
+      onClick={handleOpenPortal}
+      disabled={loading}
+      variant={variant}
+      className={className}
+    >
+      {loading ? 'Opening...' : children || 'Manage Billing'}
+    </AccessibleButton>
+  )
+}
