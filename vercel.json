@@ -4,7 +4,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "installCommand": "npm ci",
-  "regions": ["syd1", "sin1", "hnd1"],
+  "regions": ["syd1"],
   "functions": {
     "src/app/api/**/*.ts": {
       "maxDuration": 30
