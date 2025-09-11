@@ -40,10 +40,6 @@
       "source": "/api/(.*)",
       "headers": [
         {
-          "key": "Access-Control-Allow-Origin",
-          "value": "https://*.vercel.app"
-        },
-        {
           "key": "Access-Control-Allow-Methods",
           "value": "GET, POST, PUT, DELETE, OPTIONS"
         },
@@ -70,7 +66,7 @@
   "env": {
     "DATABASE_URL": "@database_url",
     "STRIPE_SECRET_KEY": "@stripe_secret_key",
-    "VITE_STRIPE_PUBLIC_KEY": "@vite_stripe_public_key",
+    "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY": "@next_public_stripe_publishable_key",
     "TWILIO_ACCOUNT_SID": "@twilio_account_sid",
     "TWILIO_AUTH_TOKEN": "@twilio_auth_token",
     "TWILIO_PHONE_NUMBER": "@twilio_phone_number"
