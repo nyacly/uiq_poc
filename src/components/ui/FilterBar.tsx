@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Search, MapPin, Star, Shield, DollarSign, X, ChevronDown } from 'lucide-react'
+import { MapPin, Star, Shield, DollarSign, X, ChevronDown } from 'lucide-react'
 import { Button } from './Button'
 import { cn } from '@/lib/utils'
 

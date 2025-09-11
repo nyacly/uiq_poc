@@ -376,7 +376,7 @@ export const initializeA11y = () => {
 }
 
 // Export everything as default for easy importing
-export default {
+const accessibility = {
   FocusTrap,
   LiveRegion,
   colorContrast,
@@ -388,3 +388,5 @@ export default {
   focusManagement,
   initializeA11y
 }
+
+export default accessibility

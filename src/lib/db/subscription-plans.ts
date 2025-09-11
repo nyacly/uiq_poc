@@ -10,7 +10,7 @@ export async function getSubscriptionPlansByType(planType: string): Promise<Subs
       .from(subscription_plans)
       .where(
         and(
-          eq(subscription_plans.plan_type, planType as any),
+          eq(subscription_plans.plan_type, planType),
           eq(subscription_plans.is_active, true)
         )
       )
@@ -29,7 +29,7 @@ const fallbackBusinessPlans: SubscriptionPlan[] = [
     id: 'basic-business',
     name: 'Basic',
     slug: 'basic-business',
-    plan_type: 'business' as any,
+    plan_type: 'business',
     description: 'Essential business listing to get started',
     price_cents: 2900,
     billing_period: 'monthly',
@@ -41,7 +41,7 @@ const fallbackBusinessPlans: SubscriptionPlan[] = [
       'Up to 3 photos',
       'Customer reviews',
       'WhatsApp group access'
-    ] as any,
+    ],
     is_popular: false,
     is_active: true,
     display_order: 1,
@@ -56,7 +56,7 @@ const fallbackBusinessPlans: SubscriptionPlan[] = [
     id: 'featured-business',
     name: 'Featured',
     slug: 'featured-business',
-    plan_type: 'business' as any,
+    plan_type: 'business',
     description: 'Stand out with enhanced visibility',
     price_cents: 5900,
     billing_period: 'monthly',
@@ -68,7 +68,7 @@ const fallbackBusinessPlans: SubscriptionPlan[] = [
       'Detailed service descriptions',
       'Priority in category listings',
       'Business performance analytics'
-    ] as any,
+    ],
     is_popular: true,
     is_active: true,
     display_order: 2,
@@ -83,7 +83,7 @@ const fallbackBusinessPlans: SubscriptionPlan[] = [
     id: 'premium-business',
     name: 'Premium',
     slug: 'premium-business',
-    plan_type: 'business' as any,
+    plan_type: 'business',
     description: 'Maximum exposure and lead generation',
     price_cents: 9900,
     billing_period: 'monthly',
@@ -96,7 +96,7 @@ const fallbackBusinessPlans: SubscriptionPlan[] = [
       'Homepage carousel placement',
       'Dedicated account support',
       'Promotional events & ads'
-    ] as any,
+    ],
     is_popular: false,
     is_active: true,
     display_order: 3,

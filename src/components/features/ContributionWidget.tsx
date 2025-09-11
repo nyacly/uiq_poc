@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Heart, Shield, Users, DollarSign, ExternalLink, Calendar, TrendingUp, Eye } from 'lucide-react'
+import { useState } from 'react'
+import { Heart, Shield, Users, DollarSign, ExternalLink, Eye } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
 import { Modal } from '../ui/Modal'

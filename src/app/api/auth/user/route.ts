@@ -3,7 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // In a real implementation, this would check the session
     // For now, return a mock response to test the auth flow

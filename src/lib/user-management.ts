@@ -93,7 +93,7 @@ export async function blockUser(request: BlockUserRequest): Promise<{ success: b
 // Unblock a user
 export async function unblockUser(blockerId: string, blockedUserId: string): Promise<{ success: boolean; message: string }> {
   try {
-    const result = await db
+    await db
       .update(userBlocks)
       .set({ isActive: false })
       .where(
@@ -151,7 +151,17 @@ export async function isUserBlocked(blockerId: string, blockedUserId: string): P
 }
 
 // Get blocked users for a user
-export async function getBlockedUsers(userId: string): Promise<any[]> {
+export async function getBlockedUsers(userId: string): Promise<{
+    blockId: string;
+    blockedUserId: string;
+    reason: string | null;
+    createdAt: Date;
+    blockedUser: {
+        id: string;
+        name: string | null;
+        avatar: string | null;
+    } | null;
+}[]> {
   try {
     return await db
       .select({
@@ -401,11 +411,11 @@ export async function getReports(
   status?: string,
   priority?: string,
   limit: number = 50
-): Promise<any[]> {
+): Promise<typeof reports.$inferSelect[]> {
   try {
     const conditions = []
     if (status) {
-      conditions.push(eq(reports.status, status as any))
+      conditions.push(eq(reports.status, status))
     }
     if (priority) {
       conditions.push(eq(reports.priority, priority))
@@ -474,7 +484,7 @@ export async function resolveReport(
 }
 
 // Get user's report history
-export async function getUserReports(userId: string, limit: number = 20): Promise<any[]> {
+export async function getUserReports(userId: string, limit: number = 20): Promise<typeof reports.$inferSelect[]> {
   try {
     return await db
       .select()
@@ -489,7 +499,7 @@ export async function getUserReports(userId: string, limit: number = 20): Promis
 }
 
 // Get reports against a user
-export async function getReportsAgainstUser(userId: string, limit: number = 20): Promise<any[]> {
+export async function getReportsAgainstUser(userId: string, limit: number = 20): Promise<typeof reports.$inferSelect[]> {
   try {
     return await db
       .select()

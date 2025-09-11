@@ -2,12 +2,10 @@
 
 import { useState } from 'react'
 import { PricingTable } from '@/components/billing/PricingTable'
-import { useRouter } from 'next/navigation'
 import { useToast } from '@/hooks/use-toast'
 
 export default function PricingPage() {
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
   const { toast } = useToast()
 
   const handleSelectPlan = async (priceId: string, productName: string) => {
@@ -121,7 +119,7 @@ export default function PricingPage() {
                   Can I cancel my subscription anytime?
                 </h3>
                 <p className="text-gray-600">
-                  Yes, you can cancel your subscription at any time. You'll continue to have access 
+                  Yes, you can cancel your subscription at any time. You&apos;ll continue to have access
                   to premium features until the end of your current billing period.
                 </p>
               </div>
@@ -163,7 +161,7 @@ export default function PricingPage() {
                   Do you offer refunds?
                 </h3>
                 <p className="text-gray-600">
-                  We offer a 30-day money-back guarantee on all plans. If you're not satisfied, 
+                  We offer a 30-day money-back guarantee on all plans. If you&apos;re not satisfied,
                   contact our support team for a full refund.
                 </p>
               </div>

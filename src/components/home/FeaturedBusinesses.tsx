@@ -2,6 +2,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/Badge'
 
@@ -108,10 +109,13 @@ export function FeaturedBusinesses() {
                     <div className="grid md:grid-cols-2 gap-8 bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-all duration-300 overflow-hidden">
                       {/* Image */}
                       <div className="relative h-64 md:h-80 bg-surface-200">
-                        <img
+                        <Image
                           src={business.image}
                           alt={business.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          layout="fill"
+                          objectFit="cover"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          className="group-hover:scale-105 transition-transform duration-500"
                         />
                         {/* Overlay */}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

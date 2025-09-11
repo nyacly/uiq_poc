@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Map, Marker, MapRef } from 'react-map-gl/mapbox'
-import { Card } from './Card'
 import { Button } from './Button'
 import { Maximize2, Minimize2, Navigation, Layers, RotateCcw } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -129,7 +128,7 @@ export function MapModule({
   }, [onBoundsChange])
 
   // Handle viewport change
-  const handleViewStateChange = useCallback(({ viewState: newViewState }: any) => {
+  const handleViewStateChange = useCallback(({ viewState: newViewState }: { viewState: any }) => {
     setViewState(newViewState)
     
     // Debounced bounds update
@@ -242,10 +241,6 @@ export function MapModule({
       east: Math.max(...lngs),
       west: Math.min(...lngs)
     }
-
-    // Add padding
-    const latPadding = (bounds.north - bounds.south) * 0.1
-    const lngPadding = (bounds.east - bounds.west) * 0.1
 
     const center = {
       latitude: (bounds.north + bounds.south) / 2,

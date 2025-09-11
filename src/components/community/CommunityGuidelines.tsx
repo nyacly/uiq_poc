@@ -120,8 +120,8 @@ export function CommunityGuidelines({ isOpen, onClose }: CommunityGuidelinesProp
               Privacy and Safety
             </h3>
             <ul className="text-gray-700 space-y-2 ml-9">
-              <li>• Don't share personal information publicly (addresses, phone numbers)</li>
-              <li>• Use the platform's messaging system for initial contact</li>
+              <li>• Don&apos;t share personal information publicly (addresses, phone numbers)</li>
+              <li>• Use the platform&apos;s messaging system for initial contact</li>
               <li>• Meet in public places for in-person transactions</li>
               <li>• Trust your instincts and report suspicious behavior</li>
             </ul>
@@ -148,7 +148,7 @@ export function CommunityGuidelines({ isOpen, onClose }: CommunityGuidelinesProp
             <div className="text-gray-700 space-y-2">
               <p>If you encounter inappropriate content or behavior:</p>
               <ul className="list-disc list-inside space-y-1 mt-2">
-                <li>Use the "Report" button on any post or profile</li>
+                <li>Use the &quot;Report&quot; button on any post or profile</li>
                 <li>Block users who are bothering you</li>
                 <li>Contact our moderation team for urgent issues</li>
                 <li>Provide screenshots or evidence when reporting</li>

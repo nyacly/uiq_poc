@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { FilterBar } from '@/components/ui/FilterBar'
 import { MapModule } from '@/components/ui/MapModule'
-import { generateCityCategoryMeta, getAllCityCategoryCombinations, QUEENSLAND_CITIES, BUSINESS_CATEGORIES } from '@/lib/seo-data'
+import { generateCityCategoryMeta, getAllCityCategoryCombinations } from '@/lib/seo-data'
 import { SchemaOrgUtils, LocalBusinessSchema, BreadcrumbSchema } from '@/lib/schema-org'
 
 interface Props {
@@ -96,7 +96,7 @@ export async function generateStaticParams() {
   return params
 }
 
-export default function CityCategoryPage({ params, searchParams }: Props) {
+export default function CityCategoryPage({ params, searchParams: _searchParams }: Props) {
   const seoData = generateCityCategoryMeta(params.city, params.category)
   
   if (!seoData) {
@@ -256,7 +256,7 @@ export default function CityCategoryPage({ params, searchParams }: Props) {
                         Growing Our {city.name} Directory
                       </h3>
                       <p className="text-gray-600 mb-6">
-                        We're building our directory of {category.name.toLowerCase()} in {city.name}. 
+                        We&apos;re building our directory of {category.name.toLowerCase()} in {city.name}.
                         Know a great business? Help us grow the community!
                       </p>
                       <div className="space-y-3">
@@ -304,12 +304,12 @@ export default function CityCategoryPage({ params, searchParams }: Props) {
                 </h2>
                 <div className="prose prose-gray">
                   <p>
-                    {city.name} is home to a vibrant community of {category.name.toLowerCase()} 
-                    serving the {city.region} region. Whether you're looking for {category.description.toLowerCase()}, 
+                    {city.name} is home to a vibrant community of {category.name.toLowerCase()}
+                    serving the {city.region} region. Whether you&apos;re looking for {category.description.toLowerCase()},
                     our community platform helps you connect with trusted local professionals.
                   </p>
                   <p>
-                    The UiQ Community Platform specifically serves the Ugandan community in Queensland, 
+                    The UiQ Community Platform specifically serves the Ugandan community in Queensland,
                     helping you find businesses and services that understand your cultural needs and preferences.
                   </p>
                 </div>

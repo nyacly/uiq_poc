@@ -4,7 +4,7 @@
  */
 
 import Stripe from 'stripe'
-import { db, stripe_customers, stripe_products, stripe_prices, stripe_subscriptions, stripe_payments, users, businesses, memberships, business_subscriptions } from './db'
+import { db, stripe_customers, stripe_products, stripe_prices, stripe_subscriptions, users, businesses, memberships, business_subscriptions } from './db'
 import { eq, and } from 'drizzle-orm'
 
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -208,9 +208,9 @@ export async function grantEntitlements(subscriptionId: string): Promise<void> {
       stripe_customer_id: subscription.customer as string,
       stripe_price_id: price.id,
       status: subscription.status,
-      current_period_start: new Date((subscription as any).current_period_start * 1000),
-      current_period_end: new Date((subscription as any).current_period_end * 1000),
-      cancel_at_period_end: (subscription as any).cancel_at_period_end,
+      current_period_start: new Date(subscription.current_period_start * 1000),
+      current_period_end: new Date(subscription.current_period_end * 1000),
+      cancel_at_period_end: subscription.cancel_at_period_end,
       trial_start: subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
       trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
       metadata: subscription.metadata
@@ -218,9 +218,9 @@ export async function grantEntitlements(subscriptionId: string): Promise<void> {
       target: stripe_subscriptions.stripe_subscription_id,
       set: {
         status: subscription.status,
-        current_period_start: new Date((subscription as any).current_period_start * 1000),
-        current_period_end: new Date((subscription as any).current_period_end * 1000),
-        cancel_at_period_end: (subscription as any).cancel_at_period_end,
+        current_period_start: new Date(subscription.current_period_start * 1000),
+        current_period_end: new Date(subscription.current_period_end * 1000),
+        cancel_at_period_end: subscription.cancel_at_period_end,
         updated_at: new Date()
       }
     })
@@ -232,17 +232,17 @@ export async function grantEntitlements(subscriptionId: string): Promise<void> {
     if (entitlementType && entitlementValue && targetUserId) {
       await db.insert(memberships).values({
         user_id: targetUserId,
-        tier: entitlementValue as any,
+        tier: entitlementValue,
         status: subscription.status === 'active' ? 'active' : 'inactive',
         stripe_subscription_id: subscription.id,
-        end_date: new Date((subscription as any).current_period_end * 1000),
-        auto_renew: !(subscription as any).cancel_at_period_end
+        end_date: new Date(subscription.current_period_end * 1000),
+        auto_renew: !subscription.cancel_at_period_end
       }).onConflictDoUpdate({
         target: memberships.user_id,
         set: {
-          tier: entitlementValue as any,
+          tier: entitlementValue,
           stripe_subscription_id: subscription.id,
-          end_date: new Date((subscription as any).current_period_end * 1000),
+          end_date: new Date(subscription.current_period_end * 1000),
           status: subscription.status === 'active' ? 'active' : 'inactive',
           updated_at: new Date()
         }
@@ -264,7 +264,7 @@ export async function grantEntitlements(subscriptionId: string): Promise<void> {
         await db
           .update(businesses)
           .set({
-            subscription_tier: entitlementValue as any,
+            subscription_tier: entitlementValue,
             updated_at: new Date()
           })
           .where(eq(businesses.id, targetBusinessId))
@@ -337,7 +337,7 @@ export async function revokeEntitlements(subscriptionId: string): Promise<void> 
 }
 
 // Get user's current entitlements
-export async function getUserEntitlements(userId: string): Promise<any[]> {
+export async function getUserEntitlements(userId: string): Promise<typeof memberships.$inferSelect[]> {
   try {
     return await db
       .select()
@@ -355,7 +355,7 @@ export async function getUserEntitlements(userId: string): Promise<any[]> {
 }
 
 // Get business entitlements
-export async function getBusinessEntitlements(businessId: string): Promise<any[]> {
+export async function getBusinessEntitlements(businessId: string): Promise<typeof business_subscriptions.$inferSelect[]> {
   try {
     return await db
       .select()
@@ -599,7 +599,7 @@ export async function initializeStripeProducts(): Promise<void> {
           
           if (!stripePrice) {
             // Create new Stripe price
-            const priceParams: any = {
+            const priceParams: Stripe.PriceCreateParams = {
               product: stripeProduct.id,
               unit_amount: priceDef.unitAmount,
               currency: priceDef.currency,

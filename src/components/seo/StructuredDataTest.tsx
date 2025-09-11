@@ -7,15 +7,21 @@ interface StructuredDataTestProps {
   showInDev?: boolean
 }
 
+interface Schema {
+  '@context'?: string;
+  '@type'?: string;
+  [key: string]: any;
+}
+
 interface StructuredDataItem {
   type: string
-  data: any
+  data: Schema | null
   element: HTMLScriptElement
   isValid: boolean
   errors: string[]
 }
 
-export function StructuredDataTest({ testId, showInDev = false }: StructuredDataTestProps) {
+export function StructuredDataTest({ testId: _testId, showInDev = false }: StructuredDataTestProps) {
   const [structuredData, setStructuredData] = useState<StructuredDataItem[]>([])
   const [isVisible, setIsVisible] = useState(false)
 
@@ -32,9 +38,9 @@ export function StructuredDataTest({ testId, showInDev = false }: StructuredData
           const content = script.textContent || script.innerHTML
           const data = JSON.parse(content)
           const isArray = Array.isArray(data)
-          const schemas = isArray ? data : [data]
+          const schemas: Schema[] = isArray ? data : [data]
 
-          schemas.forEach((schema: any) => {
+          schemas.forEach((schema: Schema) => {
             const errors: string[] = []
             let isValid = true
 

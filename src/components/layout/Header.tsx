@@ -1,7 +1,6 @@
 'use client'
 import Link from 'next/link'
 import { MAIN_NAVIGATION } from '@/lib/sitemap'
-import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/hooks/useAuth'
 
 export function Header() {

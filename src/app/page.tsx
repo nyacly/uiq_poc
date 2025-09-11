@@ -2,7 +2,6 @@
 // Complete home page with hero, search, categories, featured content
 
 import { Metadata } from 'next'
-import Link from 'next/link'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { HeroSection } from '@/components/home/HeroSection'
 import { CategoryTiles } from '@/components/home/CategoryTiles'

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createBillingPortalSession } from '@/lib/stripe'
 import { auth } from '@/lib/auth'
-import { db, stripeCustomers, users, businesses } from '@/lib/db'
+import { db, stripeCustomers, businesses } from '@/lib/db'
 import { eq, and } from 'drizzle-orm'
 
 export async function POST(request: NextRequest) {

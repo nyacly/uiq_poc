@@ -1,7 +1,6 @@
 // UiQ Business Listing Plans - CMS Configurable
 import Link from 'next/link'
 import { getBusinessSubscriptionPlans, formatPrice, getButtonStyleClasses } from '@/lib/db/subscription-plans'
-import type { SubscriptionPlan } from '@/lib/db'
 
 // Server component to fetch plans from database
 export async function MembershipPerks() {

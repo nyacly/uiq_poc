@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { AccessibleButton } from '@/components/ui/AccessibleButton'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 
@@ -36,11 +36,7 @@ export function PricingTable({ type, onSelectPlan, currentTier, loading }: Prici
   const [billingInterval, setBillingInterval] = useState<'month' | 'year'>('month')
   const [loadingProducts, setLoadingProducts] = useState(true)
 
-  useEffect(() => {
-    fetchProducts()
-  }, [type])
-
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     try {
       setLoadingProducts(true)
       const response = await fetch(`/api/stripe/products?type=${type}`)
@@ -51,7 +47,11 @@ export function PricingTable({ type, onSelectPlan, currentTier, loading }: Prici
     } finally {
       setLoadingProducts(false)
     }
-  }
+  }, [type])
+
+  useEffect(() => {
+    fetchProducts()
+  }, [fetchProducts])
 
   const formatPrice = (price: Price) => {
     const amount = price.amount / 100
