@@ -215,15 +215,17 @@ function CityCategoryPageContents({ params, _searchParams }: Props) {
         {/* Search and Filter Section */}
         <section className="bg-gray-50 py-8">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <FilterBar 
-              defaultLocation={{
-                city: city.name,
-                state: 'Queensland',
-                country: 'Australia'
-              }}
-              defaultCategory={category.slug}
-              data-testid={`filter-bar-${params.city}-${params.category}`}
-            />
+            <Suspense fallback={<div>Loading filters...</div>}>
+              <FilterBar
+                defaultLocation={{
+                  city: city.name,
+                  state: 'Queensland',
+                  country: 'Australia'
+                }}
+                defaultCategory={category.slug}
+                data-testid={`filter-bar-${params.city}-${params.category}`}
+              />
+            </Suspense>
           </div>
         </section>
         

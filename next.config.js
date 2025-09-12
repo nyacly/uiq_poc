@@ -11,7 +11,6 @@ const nextConfig = {
   
   // Experimental features for optimization
   experimental: {
-    optimizeCss: true,
     webVitalsAttribution: ['CLS', 'LCP'],
   },
   
