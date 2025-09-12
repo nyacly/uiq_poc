@@ -233,7 +233,7 @@ function getClientIdentifier(req: NextApiRequest): string {
   // Fall back to IP address
   const forwarded = req.headers['x-forwarded-for']
   const ip = forwarded 
-    ? (typeof forwarded === 'string' ? forwarded.split(',')[0] : forwarded[0])
+    ? (typeof forwarded === 'string' ? forwarded.split(',')[0] : (forwarded as string[])[0])
     : req.connection?.remoteAddress || req.socket?.remoteAddress || 'unknown'
 
   return `ip:${ip}`

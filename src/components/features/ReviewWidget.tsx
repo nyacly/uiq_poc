@@ -447,7 +447,7 @@ export function ReviewWidget({
                         className="flex-shrink-0 w-20 h-20 bg-gray-100 rounded-lg overflow-hidden cursor-pointer"
                         onClick={() => {
                           setSelectedPhotos(review.photos)
-                          setShowPhotoG(true)
+                          setShowPhotoGrid(true)
                         }}
                       >
                         <Image

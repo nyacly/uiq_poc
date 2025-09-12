@@ -57,14 +57,13 @@ export async function GET() {
     return NextResponse.json(health, { status: 200 });
     
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     console.error('Health check failed:', error);
     
     const healthError = {
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
       responseTime: `${Date.now() - startTime}ms`,
-      error: errorMessage,
+      error: error instanceof Error ? error.message : 'Unknown error',
       checks: {
         database: { status: 'error', error: 'Failed to check' },
         stripe: { status: 'unknown' },

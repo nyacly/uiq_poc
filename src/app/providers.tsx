@@ -15,7 +15,7 @@ export function Providers({ children }: ProvidersProps) {
         defaultOptions: {
           queries: {
             staleTime: 60 * 1000, // 1 minute
-            retry: (failureCount, error: any) => {
+            retry: (failureCount, error: Error & { status?: number }) => {
               // Don't retry on 401 errors
               if (error?.status === 401) return false
               return failureCount < 3

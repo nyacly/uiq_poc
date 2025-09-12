@@ -30,52 +30,33 @@ export async function GET(request: NextRequest) {
 
     const results = await query
 
-    // Define interfaces for better type safety
-    interface Price {
-      // Add properties of stripe_prices table
-      [key: string]: any;
-    }
-
-    interface Product {
-      // Add properties of stripe_products table
-      [key: string]: any;
-    }
-
-    interface ProductWithPrices extends Product {
-      prices: Price[];
-    }
-
-    interface Row {
-      product: Product;
-      prices: Price | null;
-    }
-
     // Group prices by product
-    const productsWithPrices = results.reduce((acc: ProductWithPrices[], row: Row) => {
-      const existingProduct = acc.find(p => p.id === row.product.id);
+    const productsWithPrices = results.reduce((acc: any[], row: { product: { id: any; }; prices: any; }) => {
+      const existingProduct = acc.find(p => p.id === row.product.id)
 
       if (existingProduct) {
         if (row.prices) {
-          existingProduct.prices.push(row.prices);
+          existingProduct.prices.push(row.prices)
         }
       } else {
         acc.push({
           ...row.product,
-          prices: row.prices ? [row.prices] : [],
-        });
+          prices: row.prices ? [row.prices] : []
+        })
       }
 
-      return acc;
-    }, []);
+      return acc
+    }, [])
 
     return NextResponse.json({
       products: productsWithPrices
     })
 
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     console.error('Error fetching products:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch products' },
+      { error: 'Failed to fetch products', message: errorMessage },
       { status: 500 }
     )
   }
