@@ -30,8 +30,6 @@ export function Header() {
                 className="text-neutral-600 hover:text-primary-600 px-3 py-2 text-sm font-medium transition-colors duration-200 rounded-lg hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 aria-label={`Go to ${item.label}`}
               >
-                <span className="sr-only">{item.icon}</span>
-                <span aria-hidden="true" className="mr-2">{item.icon}</span>
                 {item.label}
               </Link>
             ))}
@@ -92,7 +90,6 @@ export function Header() {
                 className="text-neutral-600 hover:text-primary-600 block px-3 py-2 text-base font-medium rounded-lg hover:bg-primary-50 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                 aria-label={`Go to ${item.label}`}
               >
-                <span aria-hidden="true" className="mr-3">{item.icon}</span>
                 {item.label}
               </Link>
             ))}
