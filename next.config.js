@@ -12,6 +12,7 @@ const nextConfig = {
   // Experimental features for optimization
   experimental: {
     webVitalsAttribution: ['CLS', 'LCP'],
+    optimizeCss: false,
   },
   
   // Allowed dev origins to fix cross-origin warnings
