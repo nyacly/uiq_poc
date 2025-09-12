@@ -38,11 +38,12 @@ export default function PricingPage() {
         throw new Error('No checkout URL returned')
       }
 
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to start checkout process. Please try again.'
       console.error('Checkout error:', error)
       toast({
         title: "Checkout Error",
-        description: error.message || "Failed to start checkout process. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       })
     } finally {

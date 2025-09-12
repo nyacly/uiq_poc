@@ -56,11 +56,12 @@ export function BillingPortalButton({
         throw new Error('No billing portal URL returned')
       }
 
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to access billing portal. Please try again.'
       console.error('Billing portal error:', error)
       toast({
         title: "Billing Portal Error",
-        description: error.message || "Failed to open billing portal. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       })
     } finally {

@@ -1,5 +1,6 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { Suspense } from 'react'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { FilterBar } from '@/components/ui/FilterBar'
 import { MapModule } from '@/components/ui/MapModule'
@@ -7,11 +8,11 @@ import { generateCityCategoryMeta, getAllCityCategoryCombinations } from '@/lib/
 import { SchemaOrgUtils, LocalBusinessSchema, BreadcrumbSchema } from '@/lib/schema-org'
 
 interface Props {
-  params: Promise<{
+  params: {
     city: string
     category: string
-  }>
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+  }
+  searchParams: { [key: string]: string | string[] | undefined }
 }
 
 // Generate metadata for SEO
@@ -96,7 +97,7 @@ export async function generateStaticParams() {
   return params
 }
 
-export default function CityCategoryPage({ params, searchParams: _searchParams }: Props) {
+function CityCategoryPageContents({ params, _searchParams }: Props) {
   const seoData = generateCityCategoryMeta(params.city, params.category)
   
   if (!seoData) {
@@ -335,5 +336,13 @@ export default function CityCategoryPage({ params, searchParams: _searchParams }
         </section>
       </MainLayout>
     </>
+  )
+}
+
+export default function CityCategoryPage(props: Props) {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CityCategoryPageContents {...props} />
+    </Suspense>
   )
 }

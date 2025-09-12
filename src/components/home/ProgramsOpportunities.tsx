@@ -1,12 +1,11 @@
 // UiQ Programs & Opportunities Highlights
 import Link from 'next/link'
 
-// Mock data using our sample programs and opportunities
 interface Opportunity {
   id: string;
   title: string;
   org: string;
-  type: 'grant' | 'scholarship' | 'job' | 'training' | 'volunteer';
+  type: 'grant' | 'job' | 'scholarship';
   deadline: string;
   amount?: string;
   description: string;
@@ -14,6 +13,7 @@ interface Opportunity {
   location?: string;
 }
 
+// Mock data using our sample programs and opportunities
 const opportunities: Opportunity[] = [
   {
     id: 'prog1',

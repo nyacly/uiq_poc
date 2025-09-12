@@ -70,17 +70,17 @@ export async function handleStripeWebhook(
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    console.error('Error processing webhook:', errorMessage)
+    console.error('Error processing webhook:', error)
 
     // Update error in webhook events log
     await db
       .update(stripeWebhookEvents)
       .set({
-        processingError: error.message || 'Unknown error'
+        processingError: errorMessage || 'Unknown error'
       })
       .where(eq(stripeWebhookEvents.stripeEventId, event.id))
 
-    return { received: false, error: error.message }
+    return { received: false, error: errorMessage }
   }
 }
 

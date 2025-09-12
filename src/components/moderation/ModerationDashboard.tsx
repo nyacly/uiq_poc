@@ -4,6 +4,15 @@ import { useState, useEffect } from 'react'
 import { AccessibleButton } from '@/components/ui/AccessibleButton'
 import { AccessibleModal } from '@/components/ui/AccessibleModal'
 
+interface ModerationMetadata {
+  reportType?: string;
+  reportedBy?: string;
+  keywords?: string[];
+  autoFlagged?: boolean;
+  confidence?: number;
+  categories?: string[];
+}
+
 interface ModerationItem {
   id: string
   type: 'report' | 'flagged_content' | 'image_scan'
@@ -13,15 +22,6 @@ interface ModerationItem {
   status: 'pending' | 'in_progress' | 'resolved'
   createdAt: string
   metadata?: ModerationMetadata
-}
-
-interface ModerationMetadata {
-  reportType?: string;
-  reportedBy?: string;
-  keywords?: string[];
-  autoFlagged?: boolean;
-  confidence?: number;
-  categories?: string[];
 }
 
 interface ModerationDashboardProps {
@@ -42,7 +42,6 @@ export function ModerationDashboard({ userRole }: ModerationDashboardProps) {
   })
   const [loading, setLoading] = useState(true)
 
-  // Mock data - replace with real API calls
   useEffect(() => {
     // Simulate loading moderation items
     setTimeout(() => {
@@ -81,6 +80,23 @@ export function ModerationDashboard({ userRole }: ModerationDashboardProps) {
       setLoading(false)
     }, 1000)
   }, [])
+
+  // Only show dashboard to admins and moderators
+  if (userRole === 'user') {
+    return (
+      <div className="text-center py-12">
+        <div className="max-w-md mx-auto">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0-6V7m0 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Access Restricted</h3>
+          <p className="text-gray-600">You don&apos;t have permission to access the moderation dashboard.</p>
+        </div>
+      </div>
+    )
+  }
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -146,23 +162,6 @@ export function ModerationDashboard({ userRole }: ModerationDashboardProps) {
     ))
     
     setSelectedItem(null)
-  }
-
-  // Only show dashboard to admins and moderators
-  if (userRole === 'user') {
-    return (
-      <div className="text-center py-12">
-        <div className="max-w-md mx-auto">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0-6V7m0 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Access Restricted</h3>
-          <p className="text-gray-600">You don&apos;t have permission to access the moderation dashboard.</p>
-        </div>
-      </div>
-    )
   }
 
   if (loading) {

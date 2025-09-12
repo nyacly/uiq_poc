@@ -387,6 +387,5 @@ const accessibility = {
   aria,
   focusManagement,
   initializeA11y
-}
-
+};
 export default accessibility

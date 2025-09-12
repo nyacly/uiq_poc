@@ -116,7 +116,6 @@ export function UpcomingEvents() {
                     alt={event.title}
                     layout="fill"
                     objectFit="cover"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     className="group-hover:scale-105 transition-transform duration-500"
                   />
                   

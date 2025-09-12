@@ -8,15 +8,14 @@ import { QUEENSLAND_CITIES, BUSINESS_CATEGORIES } from '@/lib/seo-data'
 import { SchemaOrgUtils, BreadcrumbSchema, LocalBusinessSchema } from '@/lib/schema-org'
 
 interface Props {
-  params: Promise<{
+  params: {
     city: string
-  }>
+  }
 }
 
 // Generate metadata for city pages
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const resolvedParams = await params
-  const cityData = QUEENSLAND_CITIES.find(c => c.slug === resolvedParams.city)
+  const cityData = QUEENSLAND_CITIES.find(c => c.slug === params.city)
   
   if (!cityData) {
     return {

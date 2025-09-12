@@ -23,20 +23,20 @@ interface ContentItem {
 }
 
 interface ModerationRule {
-    id: string;
-    name: string;
-    description: string | null;
-    keywords: string[];
-    contentTypes: string[];
-    severity: 'low' | 'medium' | 'high' | 'critical';
-    action: 'allow' | 'flag' | 'block' | 'auto_remove';
-    isActive: boolean;
-    caseSensitive: boolean;
-    wholeWordOnly: boolean;
-    regex: string | null;
-    exemptRoles: string[] | null;
-    createdAt: Date;
-    updatedAt: Date | null;
+  id: string;
+  name: string;
+  description: string | null;
+  keywords: string[];
+  contentTypes: string[];
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  action: 'allow' | 'flag' | 'block' | 'auto_remove';
+  isActive: boolean;
+  caseSensitive: boolean;
+  wholeWordOnly: boolean;
+  regex: string | null;
+  exemptRoles: string[] | null;
+  createdAt: Date;
+  updatedAt: Date | null;
 }
 
 // Default spam/scam keywords and patterns
@@ -382,7 +382,7 @@ export async function deleteModerationRule(ruleId: string): Promise<{ success: b
 export async function getFlaggedContent(
   status?: 'pending' | 'approved' | 'rejected' | 'flagged' | 'removed',
   limit: number = 50
-): Promise<ModerationRule[]> {
+): Promise<typeof flaggedContent.$inferSelect[]> {
   try {
     const conditions = []
     if (status) {
