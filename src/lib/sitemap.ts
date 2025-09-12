@@ -272,13 +272,13 @@ export const SITE_MAP: SiteMapItem[] = [
 
 // Navigation structure for main menu
 export const MAIN_NAVIGATION = [
-  { label: 'Directory', path: '/directory', icon: '🏢' },
-  { label: 'Services', path: '/services', icon: '⚡' },
-  { label: 'Events', path: '/events', icon: '📅' },
-  { label: 'Announcements', path: '/announcements', icon: '📢' },
-  { label: 'Opportunities', path: '/opportunities', icon: '🎯' },
-  { label: 'Classifieds', path: '/classifieds', icon: '🏷️' },
-  { label: 'Groups', path: '/groups', icon: '💬' }
+  { label: 'Directory', path: '/directory' },
+  { label: 'Services', path: '/services' },
+  { label: 'Events', path: '/events' },
+  { label: 'Announcements', path: '/announcements' },
+  { label: 'Opportunities', path: '/opportunities' },
+  { label: 'Classifieds', path: '/classifieds' },
+  { label: 'Groups', path: '/groups' }
 ]
 
 // Footer navigation
