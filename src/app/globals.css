@@ -20,7 +20,7 @@
 
   /* High contrast focus styles for accessibility */
   *:focus {
-    outline: 2px solid theme('colors.primary.500');
+    outline: 2px solid #ef4444;
     outline-offset: 2px;
   }
 
