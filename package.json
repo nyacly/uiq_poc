@@ -22,7 +22,7 @@
     "health-check": "node scripts/health-check.js",
     "health-monitor": "node scripts/health-check.js continuous",
     "build:analyze": "ANALYZE=true npm run build",
-    "postbuild": "npm run lighthouse",
+    "postbuild": "node scripts/postbuild.js",
     "db:push": "drizzle-kit push",
     "db:push:force": "drizzle-kit push --force",
     "db:studio": "drizzle-kit studio",
