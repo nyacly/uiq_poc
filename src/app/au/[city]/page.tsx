@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { Suspense } from 'react'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { FilterBar } from '@/components/ui/FilterBar'
 import { MapModule } from '@/components/ui/MapModule'
@@ -179,14 +180,16 @@ export default function CityPage({ params }: Props) {
         {/* Filter Section */}
         <section className="bg-gray-50 py-8">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <FilterBar 
-              defaultLocation={{
-                city: cityData.name,
-                state: 'Queensland',
-                country: 'Australia'
-              }}
-              data-testid={`filter-bar-${params.city}`}
-            />
+            <Suspense fallback={<div>Loading filters...</div>}>
+              <FilterBar
+                defaultLocation={{
+                  city: cityData.name,
+                  state: 'Queensland',
+                  country: 'Australia'
+                }}
+                data-testid={`filter-bar-${params.city}`}
+              />
+            </Suspense>
           </div>
         </section>
         

@@ -1,30 +1,41 @@
-'use client'
+"use client"
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { AccessibleButton } from '@/components/ui/AccessibleButton'
 import Link from 'next/link'
 
 export default function BillingSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4" />
+            <p className="text-gray-600">Processing your payment...</p>
+          </div>
+        </div>
+      }
+    >
+      <BillingSuccessContent />
+    </Suspense>
+  )
+}
+
+function BillingSuccessContent() {
   const searchParams = useSearchParams()
   const sessionId = searchParams.get('session_id')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (sessionId) {
-      // In a real implementation, you might fetch session details
-      // For now, we'll just show a success message
-      setLoading(false)
-    } else {
-      setLoading(false)
-    }
+    setLoading(false)
   }, [sessionId])
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4" />
           <p className="text-gray-600">Processing your payment...</p>
         </div>
       </div>
