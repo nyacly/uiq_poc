@@ -1,0 +1,42 @@
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# Production
+/build
+/dist
+
+# Development files
+/.next/
+.next
+/out/
+
+# Environment variables
+.env*.local
+.env
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# OS files
+.DS_Store
+
+# IDEs
+.vscode/
+.idea/
+
+# Logs
+logs
+*.log
+
+# PM2
+.pm2
+
+# Database
+*.db
+*.db-journal
