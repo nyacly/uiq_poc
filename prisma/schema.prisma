@@ -1,0 +1,53 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String         @id @default(cuid())
+  name           String
+  email          String         @unique
+  password       String?
+  role           String         @default("MEMBER") // MEMBER | BUSINESS_OWNER | ADMIN
+  avatarUrl      String?
+  phone          String?
+  location       String?
+  whatsappLink   String?
+  membershipTier String         @default("FREE") // FREE | PLUS | FAMILY
+  
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model Business {
+  id              String       @id @default(cuid())
+  ownerId         String
+  name            String
+  slug            String       @unique
+  description     String
+  category        String
+  competenceTags  String       @default("[]") // JSON array as string
+  certifications String       @default("[]") // JSON array as string
+  address         String
+  lat             Float
+  lng             Float
+  serviceRadiusKm Int          @default(15)
+  phone           String?
+  email           String?
+  website         String?
+  whatsappLink    String?
+  plan            String       @default("BASIC") // BASIC | STANDARD | PREMIUM
+  verified        Boolean      @default(false)
+  ratingAvg       Float        @default(0)
+  ratingCount     Int          @default(0)
+  
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
