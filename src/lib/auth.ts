@@ -1,61 +1,91 @@
-/**
- * Simple authentication helper
- * UiQ Community Platform - User Session Management
- */
+import { NextAuthOptions } from 'next-auth'
+import CredentialsProvider from 'next-auth/providers/credentials'
+import { PrismaAdapter } from '@auth/prisma-adapter'
+import { prisma } from './db'
+import bcrypt from 'bcryptjs'
+import { getServerSession } from 'next-auth'
 
-import { headers } from 'next/headers'
+export const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma) as any,
+  providers: [
+    CredentialsProvider({
+      name: 'credentials',
+      credentials: {
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' }
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          return null
+        }
 
-interface User {
-  id: string
-  email?: string
-  name?: string
-  firstName?: string
-  lastName?: string
-}
+        const user = await prisma.user.findUnique({
+          where: {
+            email: credentials.email
+          }
+        })
 
-interface Session {
-  user: User
-}
+        if (!user || !user.password) {
+          return null
+        }
 
-// Simple session helper for development
-// In production, this would integrate with NextAuth or similar
-export async function auth(): Promise<Session | null> {
-  try {
-    // For now, return a mock session for development
-    // This would normally check cookies/tokens for real authentication
-    const headersList = await headers()
-    const userId = headersList.get('x-user-id') || 'user_123' // Mock user ID
-    
-    if (userId) {
-      return {
-        user: {
-          id: userId,
-          email: 'test@example.com',
-          name: 'Test User',
-          firstName: 'Test',
-          lastName: 'User'
+        const isPasswordValid = await bcrypt.compare(
+          credentials.password,
+          user.password
+        )
+
+        if (!isPasswordValid) {
+          return null
+        }
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          membershipTier: user.membershipTier
         }
       }
+    })
+  ],
+  session: {
+    strategy: 'jwt'
+  },
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.role = user.role
+        token.membershipTier = user.membershipTier
+      }
+      return token
+    },
+    async session({ session, token }) {
+      if (token) {
+        session.user.id = token.sub!
+        session.user.role = token.role as string
+        session.user.membershipTier = token.membershipTier as string
+      }
+      return session
     }
-    
-    return null
-  } catch (error) {
-    console.error('Auth error:', error)
-    return null
+  },
+  pages: {
+    signIn: '/auth/signin',
+    signUp: '/auth/signup'
   }
 }
 
-// Helper to get current user ID
-export async function getCurrentUserId(): Promise<string | null> {
-  const session = await auth()
-  return session?.user?.id || null
-}
-
-// Helper to require authentication
-export async function requireAuth(): Promise<Session> {
-  const session = await auth()
-  if (!session) {
-    throw new Error('Authentication required')
+export async function getCurrentUser() {
+  const session = await getServerSession(authOptions)
+  
+  if (!session?.user?.id) {
+    return null
   }
-  return session
+
+  const user = await prisma.user.findUnique({
+    where: {
+      id: session.user.id
+    }
+  })
+
+  return user
 }

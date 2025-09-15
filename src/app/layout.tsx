@@ -47,6 +47,8 @@ export const metadata: Metadata = {
 }
 
 import { Providers } from './providers'
+import { Header } from '@/components/Header'
+import { Footer } from '@/components/Footer'
 
 export default function RootLayout({
   children,
@@ -58,7 +60,11 @@ export default function RootLayout({
       <body className={`${inter.className} antialiased bg-neutral-50 text-neutral-900`}>
         <Providers>
           <div className="min-h-screen flex flex-col">
-            {children}
+            <Header />
+            <main className="flex-1">
+              {children}
+            </main>
+            <Footer />
           </div>
         </Providers>
       </body>

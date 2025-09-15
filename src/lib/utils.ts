@@ -89,3 +89,72 @@ export function calculateReadingTime(text: string): number {
   const words = text.trim().split(/\s+/).length
   return Math.ceil(words / wordsPerMinute)
 }
+/**
+ * Format currency for display
+ */
+export function formatCurrency(cents: number, currency: string = 'AUD'): string {
+  return new Intl.NumberFormat('en-AU', {
+    style: 'currency',
+    currency: currency,
+  }).format(cents / 100)
+}
+
+/**
+ * Format date and time for display
+ */
+export function formatDateTime(date: Date | string): string {
+  return new Intl.DateTimeFormat('en-AU', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(date))
+}
+
+/**
+ * Format relative time (e.g., "2 hours ago")
+ */
+export function formatRelativeTime(date: Date | string): string {
+  const now = new Date()
+  const target = new Date(date)
+  const diffInSeconds = Math.floor((now.getTime() - target.getTime()) / 1000)
+
+  if (diffInSeconds < 60) {
+    return 'just now'
+  } else if (diffInSeconds < 3600) {
+    const minutes = Math.floor(diffInSeconds / 60)
+    return `${minutes} minute${minutes > 1 ? 's' : ''} ago`
+  } else if (diffInSeconds < 86400) {
+    const hours = Math.floor(diffInSeconds / 3600)
+    return `${hours} hour${hours > 1 ? 's' : ''} ago`
+  } else if (diffInSeconds < 2592000) {
+    const days = Math.floor(diffInSeconds / 86400)
+    return `${days} day${days > 1 ? 's' : ''} ago`
+  } else {
+    return formatDate(date)
+  }
+}
+
+/**
+ * Generate geographic coordinates with jitter
+ */
+export function geoJitter(baseLat: number, baseLng: number, range: number = 0.05) {
+  return {
+    lat: baseLat + (Math.random() - 0.5) * range,
+    lng: baseLng + (Math.random() - 0.5) * range
+  }
+}
+
+/**
+ * Generate URL-friendly slug from text
+ */
+export function generateSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9 -]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .trim()
+}
+
