@@ -8,6 +8,8 @@ A comprehensive community platform designed for the Ugandan community in Queensl
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-blue?logo=tailwindcss)
 ![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?logo=vercel)
 
+Health check: /api/health
+
 ## ✨ Features
 
 ### 🏢 **Business Directory**
