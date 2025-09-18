@@ -4,6 +4,12 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import {
+  sampleAnnouncements,
+  sampleBusinesses,
+  sampleEvents,
+  sampleListings
+} from '@/data/sample-content'
 
 async function getFeaturedData() {
   try {
@@ -39,11 +45,37 @@ async function getFeaturedData() {
       })
     ])
 
-    return { businesses, events, announcements, listings }
+    const hasContent =
+      businesses.length > 0 ||
+      events.length > 0 ||
+      announcements.length > 0 ||
+      listings.length > 0
+
+    if (hasContent) {
+      return { businesses, events, announcements, listings }
+    }
   } catch (error) {
     console.error('Failed to load featured content from Prisma. Returning empty collections.', error)
+  }
 
-    return { businesses: [], events: [], announcements: [], listings: [] }
+  // Fallback to curated sample content so the homepage never renders empty
+  return {
+    businesses: sampleBusinesses.map((business) => ({
+      ...business,
+      owner: { name: 'UiQ Community' }
+    })),
+    events: sampleEvents.map((event) => ({
+      ...event,
+      organiser: { name: event.organiser }
+    })),
+    announcements: sampleAnnouncements.map((announcement) => ({
+      ...announcement,
+      author: { name: announcement.author }
+    })),
+    listings: sampleListings.map((listing) => ({
+      ...listing,
+      owner: { name: 'UiQ Community' }
+    }))
   }
 }
 

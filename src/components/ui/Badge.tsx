@@ -2,7 +2,7 @@
 import { cn } from '@/lib/utils'
 
 export interface BadgeProps {
-  variant?: 'verified' | 'premium' | 'member-plus' | 'new' | 'featured' | 'urgent'
+  variant?: 'verified' | 'premium' | 'member-plus' | 'new' | 'featured' | 'urgent' | 'outline'
   size?: 'sm' | 'md' | 'lg'
   className?: string
   children: React.ReactNode
@@ -17,7 +17,8 @@ const Badge = ({ variant = 'verified', size = 'md', className, children }: Badge
     'member-plus': 'bg-primary-100 text-primary-700 border border-primary-200',
     new: 'bg-info-100 text-info-700 border border-info-200',
     featured: 'bg-accent-100 text-accent-700 border border-accent-300',
-    urgent: 'bg-error-100 text-error-700 border border-error-200'
+    urgent: 'bg-error-100 text-error-700 border border-error-200',
+    outline: 'bg-white text-accent-700 border border-accent-200'
   }
   
   const sizes = {
@@ -32,7 +33,8 @@ const Badge = ({ variant = 'verified', size = 'md', className, children }: Badge
     'member-plus': '♦',
     new: '•',
     featured: '◆',
-    urgent: '!'
+    urgent: '!',
+    outline: '∘'
   }
 
   return (
