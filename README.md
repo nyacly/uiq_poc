@@ -132,6 +132,7 @@ Create a `.env.local` file based on `.env.example`:
 ### **Database**
 ```env
 DATABASE_URL=postgresql://username:password@localhost:5432/uiq_community_platform
+SQLITE_DATABASE_URL=file:./prisma/dev.db
 PGHOST=localhost
 PGPORT=5432
 PGUSER=postgres
@@ -159,7 +160,9 @@ TWILIO_AUTH_TOKEN=your_twilio_auth_token
 TWILIO_PHONE_NUMBER=+1234567890
 ```
 
-For detailed setup instructions, see `SECRETS_DOCUMENTATION.md`.
+`SQLITE_DATABASE_URL` is used exclusively by Prisma for the legacy SQLite workflow. It defaults to `file:./prisma/dev.db` when not
+provided so deployments that only configure PostgreSQL will continue to succeed. For detailed setup instructions, see
+`SECRETS_DOCUMENTATION.md`.
 
 ## 🛠️ **Development**
 

@@ -21,6 +21,7 @@ LHCI_GITHUB_APP_TOKEN=your_lighthouse_ci_token
 #### Application Secrets
 ```
 DATABASE_URL=postgresql://username:password@host:port/database
+SQLITE_DATABASE_URL=file:./prisma/dev.db
 STRIPE_SECRET_KEY=sk_live_or_test_key
 TWILIO_AUTH_TOKEN=your_twilio_auth_token
 NEXTAUTH_SECRET=your_nextauth_secret
@@ -63,6 +64,8 @@ Set secrets in GitHub Actions:
 ```bash
 # Replit provides these automatically
 DATABASE_URL=postgresql://...
+# Optional: keep Prisma pointed at SQLite until PostgreSQL migration is complete
+SQLITE_DATABASE_URL=file:./prisma/dev.db
 PGHOST=...
 PGPORT=5432
 PGUSER=...

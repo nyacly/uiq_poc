@@ -6,39 +6,45 @@ import { Badge } from '@/components/ui/Badge'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
 async function getFeaturedData() {
-  const [businesses, events, announcements, listings] = await Promise.all([
-    prisma.business.findMany({
-      where: { verified: true },
-      include: { owner: true },
-      orderBy: { ratingAvg: 'desc' },
-      take: 6
-    }),
-    prisma.event.findMany({
-      where: {
-        startAt: { gte: new Date() }
-      },
-      include: { organiser: true },
-      orderBy: { startAt: 'asc' },
-      take: 4
-    }),
-    prisma.announcement.findMany({
-      where: { 
-        type: 'BEREAVEMENT',
-        featured: true 
-      },
-      include: { author: true },
-      orderBy: { createdAt: 'desc' },
-      take: 3
-    }),
-    prisma.listing.findMany({
-      where: { status: 'active' },
-      include: { owner: true },
-      orderBy: { createdAt: 'desc' },
-      take: 6
-    })
-  ])
+  try {
+    const [businesses, events, announcements, listings] = await Promise.all([
+      prisma.business.findMany({
+        where: { verified: true },
+        include: { owner: true },
+        orderBy: { ratingAvg: 'desc' },
+        take: 6
+      }),
+      prisma.event.findMany({
+        where: {
+          startAt: { gte: new Date() }
+        },
+        include: { organiser: true },
+        orderBy: { startAt: 'asc' },
+        take: 4
+      }),
+      prisma.announcement.findMany({
+        where: {
+          type: 'BEREAVEMENT',
+          featured: true
+        },
+        include: { author: true },
+        orderBy: { createdAt: 'desc' },
+        take: 3
+      }),
+      prisma.listing.findMany({
+        where: { status: 'active' },
+        include: { owner: true },
+        orderBy: { createdAt: 'desc' },
+        take: 6
+      })
+    ])
 
-  return { businesses, events, announcements, listings }
+    return { businesses, events, announcements, listings }
+  } catch (error) {
+    console.error('Failed to load featured content from Prisma. Returning empty collections.', error)
+
+    return { businesses: [], events: [], announcements: [], listings: [] }
+  }
 }
 
 export default async function HomePage() {
