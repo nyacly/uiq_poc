@@ -1,19 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createCheckoutSession } from '@/lib/stripe'
-import { auth } from '@/lib/auth'
 import { db, stripePrices, businesses } from '@/lib/db'
 import { eq, and } from 'drizzle-orm'
+import { requireUser, ensureOwnerOrAdmin, HttpError } from '../../../../../server/auth'
 
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
-    const session = await auth()
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
+    const user = await requireUser()
 
     // Skip rate limiting for now to avoid database table dependency
     // TODO: Implement proper rate limiting after rate_limits table is added
@@ -66,21 +59,20 @@ export async function POST(request: NextRequest) {
 
     // If businessId is provided, verify the user owns this business
     if (businessId) {
-      const business = await db
-        .select()
+      const [business] = await db
+        .select({
+          id: businesses.id,
+          ownerId: businesses.ownerId
+        })
         .from(businesses)
-        .where(and(
-          eq(businesses.id, businessId),
-          eq(businesses.ownerRef, session.user.id)
-        ))
+        .where(eq(businesses.id, businessId))
         .limit(1)
 
-      if (business.length === 0) {
-        return NextResponse.json(
-          { error: 'Business not found or unauthorized' },
-          { status: 403 }
-        )
+      if (!business) {
+        throw new HttpError(403, 'Business not found or unauthorized')
       }
+
+      ensureOwnerOrAdmin(user, business.ownerId)
     }
 
     // Create default URLs if not provided
@@ -90,7 +82,7 @@ export async function POST(request: NextRequest) {
 
     // Create checkout session
     const checkoutSession = await createCheckoutSession({
-      userId: session.user.id,
+      userId: user.id,
       businessId,
       priceId,
       successUrl: defaultSuccessUrl,
@@ -98,7 +90,7 @@ export async function POST(request: NextRequest) {
       mode,
       trialPeriodDays,
       metadata: {
-        userId: session.user.id,
+        userId: user.id,
         businessId: businessId || '',
         ...metadata
       }
@@ -110,6 +102,12 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
+    if (error instanceof HttpError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status }
+      )
+    }
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     console.error('Error creating checkout session:', error)
     return NextResponse.json(
