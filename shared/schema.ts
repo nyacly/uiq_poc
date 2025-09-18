@@ -320,6 +320,7 @@ export const events = pgTable(
       onDelete: "set null",
     }),
     title: varchar("title", { length: 255 }).notNull(),
+    category: varchar("category", { length: 120 }).notNull(),
     description: text("description"),
     status: varchar("status", { length: 32 })
       .notNull()
@@ -349,6 +350,7 @@ export const events = pgTable(
     eventsOrganizerIdx: index("events_organizer_idx").on(table.organizerId),
     eventsBusinessIdx: index("events_business_idx").on(table.businessId),
     eventsStartIdx: index("events_start_idx").on(table.startAt),
+    eventsCategoryIdx: index("events_category_idx").on(table.category),
     eventsStatusIdx: index("events_status_idx").on(table.status),
     eventsVisibilityCheck: check(
       "events_visibility_check",
