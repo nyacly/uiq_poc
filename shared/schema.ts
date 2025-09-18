@@ -266,6 +266,49 @@ export const businessReviews = pgTable(
   }),
 );
 
+export const serviceProviders = pgTable(
+  "service_providers",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 255 }).notNull(),
+    slug: varchar("slug", { length: 255 }).notNull(),
+    description: text("description"),
+    services: jsonb("services").default(sql`'[]'::jsonb`).notNull(),
+    baseLocation: varchar("base_location", { length: 255 }),
+    suburb: varchar("suburb", { length: 120 }),
+    state: varchar("state", { length: 120 }),
+    phone: varchar("phone", { length: 32 }),
+    email: varchar("email", { length: 255 }),
+    website: varchar("website", { length: 512 }),
+    whatsapp: varchar("whatsapp", { length: 64 }),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`).notNull(),
+    isVerified: boolean("is_verified").default(false).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    serviceProvidersSlugKey: uniqueIndex("service_providers_slug_key").on(
+      table.slug,
+    ),
+    serviceProvidersUserIdx: index("service_providers_user_idx").on(
+      table.userId,
+    ),
+    serviceProvidersNameIdx: index("service_providers_name_idx").on(
+      table.name,
+    ),
+    serviceProvidersSuburbIdx: index("service_providers_suburb_idx").on(
+      table.suburb,
+    ),
+  }),
+);
+
 export const events = pgTable(
   "events",
   {
@@ -784,6 +827,8 @@ export type Business = typeof businesses.$inferSelect;
 export type NewBusiness = typeof businesses.$inferInsert;
 export type BusinessReview = typeof businessReviews.$inferSelect;
 export type NewBusinessReview = typeof businessReviews.$inferInsert;
+export type ServiceProvider = typeof serviceProviders.$inferSelect;
+export type NewServiceProvider = typeof serviceProviders.$inferInsert;
 export type Event = typeof events.$inferSelect;
 export type NewEvent = typeof events.$inferInsert;
 export type Rsvp = typeof rsvps.$inferSelect;
@@ -812,6 +857,7 @@ export type InsertUser = NewUser;
 export type InsertProfile = NewProfile;
 export type InsertBusiness = NewBusiness;
 export type InsertBusinessReview = NewBusinessReview;
+export type InsertServiceProvider = NewServiceProvider;
 export type InsertEvent = NewEvent;
 export type InsertRsvp = NewRsvp;
 export type InsertAnnouncement = NewAnnouncement;

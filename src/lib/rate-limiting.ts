@@ -30,6 +30,7 @@ export const RATE_LIMIT_CONFIGS = {
   
   // Content creation
   post_business: { windowMs: 60 * 60 * 1000, maxRequests: 5 }, // 5 business posts per hour
+  post_provider: { windowMs: 60 * 60 * 1000, maxRequests: 8 }, // 8 provider writes per hour
   post_listing: { windowMs: 60 * 60 * 1000, maxRequests: 10 }, // 10 listings per hour
   post_message: { windowMs: 60 * 1000, maxRequests: 20 }, // 20 messages per minute
   post_review: { windowMs: 60 * 60 * 1000, maxRequests: 5 }, // 5 reviews per hour

@@ -1,5 +1,46 @@
 import '@testing-library/jest-dom'
 
+const { TextEncoder, TextDecoder } = require('util')
+const { ReadableStream, WritableStream, TransformStream } = require('node:stream/web')
+
+if (typeof global.TextEncoder === 'undefined') {
+  global.TextEncoder = TextEncoder
+}
+
+if (typeof global.TextDecoder === 'undefined') {
+  global.TextDecoder = TextDecoder
+}
+
+if (typeof global.ReadableStream === 'undefined') {
+  global.ReadableStream = ReadableStream
+}
+
+if (typeof global.WritableStream === 'undefined') {
+  global.WritableStream = WritableStream
+}
+
+if (typeof global.TransformStream === 'undefined') {
+  global.TransformStream = TransformStream
+}
+
+// Polyfill Web Fetch API primitives for Next.js server modules in tests
+if (typeof global.Request === 'undefined') {
+  const { Request, Response, Headers, FormData, Blob, File, fetch } = require(
+    'next/dist/compiled/@edge-runtime/primitives/fetch',
+  )
+
+  global.Request = Request
+  global.Response = Response
+  global.Headers = Headers
+  global.FormData = FormData
+  global.Blob = Blob
+  global.File = File
+
+  if (typeof global.fetch === 'undefined') {
+    global.fetch = fetch
+  }
+}
+
 // Mock Next.js router
 jest.mock('next/router', () => ({
   useRouter() {
@@ -79,16 +120,20 @@ global.ResizeObserver = class ResizeObserver {
   unobserve() {}
 }
 
-// Setup MSW (Mock Service Worker) for API mocking
-import { setupServer } from 'msw/node'
-import { rest } from 'msw'
+// Setup MSW (Mock Service Worker) for API mocking when available
+try {
+  const { setupServer } = require('msw/node')
+  const { rest } = require('msw')
 
-const server = setupServer(
-  rest.get('/api/health', (req, res, ctx) => {
-    return res(ctx.status(200), ctx.json({ status: 'ok' }))
-  })
-)
+  const server = setupServer(
+    rest.get('/api/health', (req, res, ctx) => {
+      return res(ctx.status(200), ctx.json({ status: 'ok' }))
+    })
+  )
 
-beforeAll(() => server.listen())
-afterEach(() => server.resetHandlers())
-afterAll(() => server.close())
+  beforeAll(() => server.listen())
+  afterEach(() => server.resetHandlers())
+  afterAll(() => server.close())
+} catch (error) {
+  console.warn('MSW not available for tests, skipping API mocking setup.')
+}
