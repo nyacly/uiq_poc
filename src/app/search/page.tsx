@@ -17,53 +17,58 @@ async function searchContent(query: string) {
 
   const searchTerm = query.trim()
 
-  const [businesses, events, announcements, listings] = await Promise.all([
-    prisma.business.findMany({
-      where: {
-        OR: [
-          { name: { contains: searchTerm } },
-          { description: { contains: searchTerm } },
-          { category: { contains: searchTerm } },
-        ]
-      },
-      include: { owner: true },
-      take: 20
-    }),
-    prisma.event.findMany({
-      where: {
-        OR: [
-          { title: { contains: searchTerm } },
-          { description: { contains: searchTerm } },
-          { category: { contains: searchTerm } },
-        ]
-      },
-      include: { organiser: true },
-      take: 20
-    }),
-    prisma.announcement.findMany({
-      where: {
-        OR: [
-          { title: { contains: searchTerm } },
-          { body: { contains: searchTerm } },
-        ]
-      },
-      include: { author: true },
-      take: 20
-    }),
-    prisma.listing.findMany({
-      where: {
-        OR: [
-          { title: { contains: searchTerm } },
-          { description: { contains: searchTerm } },
-          { type: { contains: searchTerm } },
-        ]
-      },
-      include: { owner: true },
-      take: 20
-    })
-  ])
+  try {
+    const [businesses, events, announcements, listings] = await Promise.all([
+      prisma.business.findMany({
+        where: {
+          OR: [
+            { name: { contains: searchTerm } },
+            { description: { contains: searchTerm } },
+            { category: { contains: searchTerm } },
+          ]
+        },
+        include: { owner: true },
+        take: 20
+      }),
+      prisma.event.findMany({
+        where: {
+          OR: [
+            { title: { contains: searchTerm } },
+            { description: { contains: searchTerm } },
+            { category: { contains: searchTerm } },
+          ]
+        },
+        include: { organiser: true },
+        take: 20
+      }),
+      prisma.announcement.findMany({
+        where: {
+          OR: [
+            { title: { contains: searchTerm } },
+            { body: { contains: searchTerm } },
+          ]
+        },
+        include: { author: true },
+        take: 20
+      }),
+      prisma.listing.findMany({
+        where: {
+          OR: [
+            { title: { contains: searchTerm } },
+            { description: { contains: searchTerm } },
+            { type: { contains: searchTerm } },
+          ]
+        },
+        include: { owner: true },
+        take: 20
+      })
+    ])
 
-  return { businesses, events, announcements, listings }
+    return { businesses, events, announcements, listings }
+  } catch (error) {
+    console.error('Search query failed when reading from Prisma. Returning empty results.', error)
+    return { businesses: [], events: [], announcements: [], listings: [] }
+  }
 }
 
 function SearchResults({ query }: { query: string }) {
