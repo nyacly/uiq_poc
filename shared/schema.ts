@@ -413,9 +413,13 @@ export const announcements = pgTable(
       .notNull()
       .default("public")
       .$type<AnnouncementAudience>(),
+    isApproved: boolean("is_approved")
+      .notNull()
+      .default(false),
     publishedAt: timestamp("published_at", { withTimezone: true }),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
     attachments: jsonb("attachments").default(sql`'[]'::jsonb`).notNull(),
+    extra: jsonb("extra").default(sql`'{}'::jsonb`).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
