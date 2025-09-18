@@ -619,6 +619,7 @@ export const participants = pgTable(
     joinedAt: timestamp("joined_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
+    lastReadAt: timestamp("last_read_at", { withTimezone: true }),
     metadata: jsonb("metadata").default(sql`'{}'::jsonb`).notNull(),
   },
   (table) => ({
