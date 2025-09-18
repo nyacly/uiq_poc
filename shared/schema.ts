@@ -69,7 +69,7 @@ export type MessageType = (typeof messageTypes)[number];
 export const messageStatuses = ["sent", "delivered", "read"] as const;
 export type MessageStatus = (typeof messageStatuses)[number];
 
-export const reportSubjects = [
+export const reportTargetTypes = [
   "user",
   "business",
   "event",
@@ -77,9 +77,15 @@ export const reportSubjects = [
   "classified",
   "message",
 ] as const;
-export type ReportSubject = (typeof reportSubjects)[number];
+export type ReportTargetType = (typeof reportTargetTypes)[number];
 
-export const reportStatuses = ["pending", "reviewing", "resolved", "dismissed"] as const;
+export const reportStatuses = [
+  "open",
+  "pending",
+  "reviewing",
+  "resolved",
+  "dismissed",
+] as const;
 export type ReportStatus = (typeof reportStatuses)[number];
 
 export const subscriptionStatuses = [
@@ -688,14 +694,14 @@ export const reports = pgTable(
     reporterId: uuid("reporter_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    subjectType: varchar("subject_type", { length: 32 })
+    targetType: varchar("target_type", { length: 32 })
       .notNull()
-      .$type<ReportSubject>(),
-    subjectId: uuid("subject_id").notNull(),
+      .$type<ReportTargetType>(),
+    targetId: uuid("target_id").notNull(),
     reason: varchar("reason", { length: 64 }).notNull(),
     status: varchar("status", { length: 32 })
       .notNull()
-      .default("pending")
+      .default("open")
       .$type<ReportStatus>(),
     details: text("details"),
     resolution: text("resolution"),
@@ -709,18 +715,18 @@ export const reports = pgTable(
   },
   (table) => ({
     reportsReporterIdx: index("reports_reporter_idx").on(table.reporterId),
-    reportsSubjectIdx: index("reports_subject_idx").on(
-      table.subjectType,
-      table.subjectId,
+    reportsTargetIdx: index("reports_target_idx").on(
+      table.targetType,
+      table.targetId,
     ),
     reportsStatusIdx: index("reports_status_idx").on(table.status),
-    reportsSubjectCheck: check(
-      "reports_subject_check",
-      sql`${table.subjectType} in ('user', 'business', 'event', 'announcement', 'classified', 'message')`,
+    reportsTargetCheck: check(
+      "reports_target_check",
+      sql`${table.targetType} in ('user', 'business', 'event', 'announcement', 'classified', 'message')`,
     ),
     reportsStatusCheck: check(
       "reports_status_check",
-      sql`${table.status} in ('pending', 'reviewing', 'resolved', 'dismissed')`,
+      sql`${table.status} in ('open', 'pending', 'reviewing', 'resolved', 'dismissed')`,
     ),
   }),
 );

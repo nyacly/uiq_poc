@@ -15,6 +15,13 @@
       "when": 1758205076012,
       "tag": "0001_add_event_category",
       "breakpoints": false
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1758205077012,
+      "tag": "0002_update_reports_table",
+      "breakpoints": false
     }
   ]
 }
