@@ -110,10 +110,13 @@ A comprehensive community platform designed for the Ugandan community in Queensl
    
    Fill in your environment variables (see [Environment Variables](#-environment-variables) section).
 
-4. **Set up the database**
+4. **Set up the database and seed sample content**
    ```bash
-   npm run db:push
+   npm run db:setup
    ```
+
+   This command pushes the Prisma schema to the local SQLite database and seeds it with rich sample data so the application has
+   businesses, events, listings, and announcements to explore straight away.
 
 5. **Start development server**
    ```bash
@@ -124,6 +127,13 @@ A comprehensive community platform designed for the Ugandan community in Queensl
    ```
    http://localhost:5000
    ```
+
+> 💡 **Default login credentials**
+>
+> The seed script provisions ready-to-use accounts so you can explore different user journeys immediately:
+> - Admin: `admin@uiq.com` / `changeme123`
+> - Business owner: `business1@example.com` / `changeme123`
+> - Community member: `member1@example.com` / `changeme123`
 
 ## 📝 **Environment Variables**
 
