@@ -1,5 +1,16 @@
+import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+
+// Ensure Prisma always receives a usable DATABASE_URL.
+// In local environments we prefer SQLite while production can supply its own connection string.
+if (!process.env.DATABASE_URL) {
+  if (process.env.SQLITE_DATABASE_URL) {
+    process.env.DATABASE_URL = process.env.SQLITE_DATABASE_URL
+  } else {
+    process.env.DATABASE_URL = 'file:./prisma/dev.db'
+  }
+}
 
 const prisma = new PrismaClient()
 
@@ -204,7 +215,7 @@ async function main() {
     const user = users[Math.floor(Math.random() * users.length)]
     
     try {
-      await prisma.rsvp.create({
+      await prisma.rSVP.create({
         data: {
           eventId: event.id,
           userId: user.id,
