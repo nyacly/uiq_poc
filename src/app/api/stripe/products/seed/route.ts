@@ -5,9 +5,16 @@
 
 import { NextResponse } from 'next/server'
 import { seedStripeProducts } from '@/lib/stripe'
+import { requireUser, isAdmin, HttpError } from '../../../../../../server/auth'
 
 export async function POST() {
   try {
+    const user = await requireUser()
+
+    if (!isAdmin(user)) {
+      throw new HttpError(403, 'Admin access required')
+    }
+
     // Only allow in development environment
     if (process.env.NODE_ENV === 'production') {
       return NextResponse.json(
@@ -25,9 +32,15 @@ export async function POST() {
       message: 'Stripe products have been seeded successfully'
     })
   } catch (error) {
+    if (error instanceof HttpError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status }
+      )
+    }
     console.error('Error seeding Stripe products:', error)
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to seed Stripe products',
         details: error instanceof Error ? error.message : 'Unknown error'
       },

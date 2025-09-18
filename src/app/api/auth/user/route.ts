@@ -1,27 +1,27 @@
-// User authentication endpoint for Community Platform
-// Using integration blueprint: javascript_log_in_with_replit
-
 import { NextRequest, NextResponse } from 'next/server'
+import { getSessionUser } from '../../../../../server/auth'
 
 export async function GET(_request: NextRequest) {
   try {
-    // In a real implementation, this would check the session
-    // For now, return a mock response to test the auth flow
-    // This will be replaced with actual Replit Auth session checking
-    
-    const response = NextResponse.json({
-      id: "demo-user",
-      email: "demo@example.com",
-      firstName: "Demo",
-      lastName: "User",
-      profileImageUrl: null
-    })
+    const sessionUser = await getSessionUser()
 
-    return response
+    if (!sessionUser) {
+      return NextResponse.json(
+        { message: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    return NextResponse.json({
+      id: sessionUser.id,
+      email: sessionUser.email,
+      role: sessionUser.role,
+      status: sessionUser.status
+    })
   } catch (error) {
-    console.error("Auth error:", error)
+    console.error('Auth error:', error)
     return NextResponse.json(
-      { message: "Unauthorized" },
+      { message: 'Unauthorized' },
       { status: 401 }
     )
   }

@@ -1,19 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createBillingPortalSession } from '@/lib/stripe'
-import { auth } from '@/lib/auth'
 import { db, stripeCustomers, businesses } from '@/lib/db'
-import { eq, and } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
+import { requireUser, ensureOwnerOrAdmin, HttpError } from '../../../../../server/auth'
 
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
-    const session = await auth()
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
+    const user = await requireUser()
 
     const body = await request.json()
     const { businessId, returnUrl } = body
@@ -23,21 +16,20 @@ export async function POST(request: NextRequest) {
 
     if (businessId) {
       // Business billing portal - verify user owns the business first
-      const business = await db
-        .select()
+      const [business] = await db
+        .select({
+          id: businesses.id,
+          ownerId: businesses.ownerId
+        })
         .from(businesses)
-        .where(and(
-          eq(businesses.id, businessId),
-          eq(businesses.ownerRef, session.user.id)
-        ))
+        .where(eq(businesses.id, businessId))
         .limit(1)
 
-      if (business.length === 0) {
-        return NextResponse.json(
-          { error: 'Business not found or unauthorized' },
-          { status: 403 }
-        )
+      if (!business) {
+        throw new HttpError(403, 'Business not found or unauthorized')
       }
+
+      ensureOwnerOrAdmin(user, business.ownerId)
 
       // Get Stripe customer for this business
       const customer = await db
@@ -54,7 +46,7 @@ export async function POST(request: NextRequest) {
       const customer = await db
         .select()
         .from(stripeCustomers)
-        .where(eq(stripeCustomers.userId, session.user.id))
+        .where(eq(stripeCustomers.userId, user.id))
         .limit(1)
 
       if (customer.length > 0) {
@@ -81,6 +73,12 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
+    if (error instanceof HttpError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: error.status }
+      )
+    }
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
     console.error('Error creating billing portal session:', error)
     return NextResponse.json(
