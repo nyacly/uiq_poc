@@ -1,0 +1,74 @@
+name: Setup Verification
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify-seed-data:
+    name: Verify database setup & seed
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run database setup
+        run: npm run db:setup
+        env:
+          SQLITE_DATABASE_URL: file:./prisma/dev.db
+
+      - name: Verify seeded content
+        run: |
+          node - <<'NODE'
+          const { PrismaClient } = require('@prisma/client');
+          const prisma = new PrismaClient();
+
+          async function main() {
+            const counts = {
+              users: await prisma.user.count(),
+              businesses: await prisma.business.count(),
+              events: await prisma.event.count(),
+              listings: await prisma.listing.count(),
+              announcements: await prisma.announcement.count(),
+            };
+
+            console.log('Seed data counts:', counts);
+
+            const expectations = {
+              users: 31,
+              businesses: 25,
+              events: 12,
+              listings: 40,
+              announcements: 10,
+            };
+
+            for (const [key, value] of Object.entries(expectations)) {
+              if (counts[key] < value) {
+                throw new Error(`Expected at least ${value} ${key}, but found ${counts[key]}`);
+              }
+            }
+
+            console.log('✅ Seed verification succeeded');
+          }
+
+          main()
+            .catch((error) => {
+              console.error('Seed verification failed:', error);
+              process.exit(1);
+            })
+            .finally(async () => {
+              await prisma.$disconnect();
+            });
+          NODE
+        env:
+          SQLITE_DATABASE_URL: file:./prisma/dev.db
+root@3156eee4345f:/workspace/uiq_poc#
