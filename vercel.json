@@ -10,6 +10,12 @@
       "maxDuration": 30
     }
   },
+  "crons": [
+    {
+      "path": "/api/jobs/digest",
+      "schedule": "0 9 * * MON"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
