@@ -15,7 +15,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
-export const userRoles = ["member", "moderator", "admin"] as const;
+export const userRoles = ["member", "business_owner", "moderator", "admin"] as const;
 export type UserRole = (typeof userRoles)[number];
 
 export const userStatuses = ["active", "inactive", "suspended"] as const;
@@ -143,7 +143,7 @@ export const users = pgTable(
     ),
     usersRoleCheck: check(
       "users_role_check",
-      sql`${table.role} in ('member', 'moderator', 'admin')`,
+      sql`${table.role} in ('member', 'business_owner', 'moderator', 'admin')`,
     ),
     usersStatusCheck: check(
       "users_status_check",
