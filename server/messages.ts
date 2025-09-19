@@ -6,6 +6,7 @@ import {
   db,
   messages,
   participants,
+  profiles,
   users,
   type Conversation,
   type Message,
@@ -13,6 +14,7 @@ import {
 } from '@/lib/db'
 import type { SessionUser } from '@server/auth'
 import { ForbiddenError, HttpError } from '@server/auth'
+import { buildAbsoluteUrl, notifyEmail } from '@server/notifications'
 
 type MinimalUser = Pick<SessionUser, 'id' | 'role'>
 
@@ -187,6 +189,12 @@ export async function startConversation(
     },
   )
 
+  void notifyConversationParticipants({
+    conversation,
+    message,
+    senderId: user.id,
+  })
+
   return {
     conversation,
     participants: insertedParticipants,
@@ -275,6 +283,12 @@ export async function addMessageToConversation(
     return { message: createdMessage }
   })
 
+  void notifyConversationParticipants({
+    conversation,
+    message,
+    senderId: user.id,
+  })
+
   const unreadCount = participant
     ? await calculateUnreadCount(db, conversationId, user.id, participant.lastReadAt)
     : 0
@@ -337,4 +351,70 @@ async function calculateUnreadCount(
   const [result] = whereClause ? await query.where(whereClause) : await query
 
   return Number(result?.count ?? 0)
+}
+
+async function getUserDisplayName(userId: string) {
+  const [record] = await db
+    .select({ email: users.email, displayName: profiles.displayName })
+    .from(users)
+    .leftJoin(profiles, eq(profiles.userId, users.id))
+    .where(eq(users.id, userId))
+    .limit(1)
+
+  if (!record) {
+    return 'A community member'
+  }
+
+  return record.displayName ?? record.email ?? 'A community member'
+}
+
+function createMessagePreview(body: string) {
+  const trimmed = body.trim()
+
+  if (trimmed.length <= 140) {
+    return trimmed
+  }
+
+  return `${trimmed.slice(0, 137)}...`
+}
+
+async function notifyConversationParticipants({
+  conversation,
+  message,
+  senderId,
+}: {
+  conversation: Conversation
+  message: Message
+  senderId: string
+}) {
+  try {
+    const recipientRows = await db
+      .select({ userId: participants.userId })
+      .from(participants)
+      .where(eq(participants.conversationId, conversation.id))
+
+    if (!recipientRows.length) {
+      return
+    }
+
+    const senderName = await getUserDisplayName(senderId)
+    const preview = createMessagePreview(message.body)
+    const conversationUrl = buildAbsoluteUrl(`/messages/${conversation.id}`)
+
+    await Promise.all(
+      recipientRows
+        .filter((recipient) => recipient.userId !== senderId)
+        .map(async (recipient) => {
+          await notifyEmail(recipient.userId, `New message from ${senderName}`, {
+            template: 'newMessage',
+            senderName,
+            messagePreview: preview,
+            conversationSubject: conversation.topic ?? null,
+            conversationUrl,
+          })
+        }),
+    )
+  } catch (error) {
+    console.error('Failed to send message notifications', error)
+  }
 }

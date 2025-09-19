@@ -106,6 +106,15 @@ export type SubscriptionPlan = (typeof subscriptionPlans)[number];
 export const usageScopes = ["global", "user", "business"] as const;
 export type UsageScope = (typeof usageScopes)[number];
 
+export const notificationDigestFrequencies = [
+  "off",
+  "daily",
+  "weekly",
+  "monthly",
+] as const;
+export type NotificationDigestFrequency =
+  (typeof notificationDigestFrequencies)[number];
+
 export const users = pgTable(
   "users",
   {
@@ -167,6 +176,9 @@ export const profiles = pgTable(
     websiteUrl: varchar("website_url", { length: 512 }),
     socialLinks: jsonb("social_links").default(sql`'[]'::jsonb`).notNull(),
     preferences: jsonb("preferences").default(sql`'{}'::jsonb`).notNull(),
+    notificationPrefs: jsonb("notification_prefs")
+      .default(sql`'{"email":true,"sms":false,"digest":"weekly"}'::jsonb`)
+      .notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

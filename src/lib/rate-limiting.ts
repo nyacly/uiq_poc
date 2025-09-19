@@ -32,6 +32,7 @@ export const RATE_LIMIT_CONFIGS = {
   post_business: { windowMs: 60 * 60 * 1000, maxRequests: 5 }, // 5 business posts per hour
   post_provider: { windowMs: 60 * 60 * 1000, maxRequests: 8 }, // 8 provider writes per hour
   post_event: { windowMs: 60 * 60 * 1000, maxRequests: 8 }, // 8 event writes per hour
+  post_rsvp: { windowMs: 60 * 60 * 1000, maxRequests: 5 }, // 5 RSVPs per hour
   post_announcement: { windowMs: 60 * 60 * 1000, maxRequests: 12 }, // 12 announcements per hour
   post_listing: { windowMs: 60 * 60 * 1000, maxRequests: 10 }, // 10 listings per hour
   upload_media: { windowMs: 60 * 60 * 1000, maxRequests: 30 }, // 30 media uploads per hour
@@ -50,6 +51,7 @@ export const RATE_LIMIT_CONFIGS = {
 
   // Administrative tools
   admin_action: { windowMs: 60 * 1000, maxRequests: 40 },
+  update_notification_prefs: { windowMs: 10 * 60 * 1000, maxRequests: 10 },
 } as const
 
 // Check rate limit for a specific identifier and endpoint

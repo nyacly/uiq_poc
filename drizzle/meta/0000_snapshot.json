@@ -1630,6 +1630,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
+        },
+        "notification_prefs": {
+          "name": "notification_prefs",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{\"email\":true,\"sms\":false,\"digest\":\"weekly\"}'::jsonb"
         }
       },
       "indexes": {

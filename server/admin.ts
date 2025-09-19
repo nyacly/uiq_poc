@@ -11,6 +11,7 @@ import {
   reports,
   users,
 } from '@/lib/db'
+import { buildAbsoluteUrl, notifyEmail } from '@server/notifications'
 import { HttpError } from './auth'
 import {
   userRoles,
@@ -405,11 +406,31 @@ export async function setAnnouncementApproval(
       updatedAt: now,
     })
     .where(eq(announcements.id, announcementId))
-    .returning({ isApproved: announcements.isApproved, publishedAt: announcements.publishedAt })
+    .returning({
+      isApproved: announcements.isApproved,
+      publishedAt: announcements.publishedAt,
+      authorId: announcements.authorId,
+      title: announcements.title,
+    })
 
   if (!updated) {
     throw new HttpError(404, 'Announcement not found')
   }
+
+  const subject = approved
+    ? 'Your announcement was approved'
+    : 'Your announcement needs attention'
+
+  void notifyEmail(updated.authorId, subject, {
+    template: 'adminAction',
+    action: approved ? 'approved' : 'takedown',
+    entityType: 'announcement',
+    entityTitle: updated.title,
+    manageUrl: buildAbsoluteUrl(`/announcements/${announcementId}`),
+    note: approved
+      ? null
+      : 'Please review and update your announcement to meet our guidelines.',
+  })
 
   return {
     isApproved: updated.isApproved,
