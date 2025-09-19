@@ -21,6 +21,16 @@ jest.mock('@/lib/rate-limiting', () => ({
   checkRateLimit: jest.fn(),
 }))
 
+jest.mock('@server/usage', () => {
+  const actual = jest.requireActual('@server/usage')
+  return {
+    ...actual,
+    getUserSubscriptionTier: jest.fn(),
+    getUsageCount: jest.fn(),
+    incrementUsage: jest.fn(),
+  }
+})
+
 const createRequest = (
   url: string,
   init?: { method?: string; body?: unknown; headers?: Record<string, string> },
@@ -70,6 +80,12 @@ import {
 } from '@server/announcements'
 import { getSessionUser, requireUser, UnauthorizedError } from '@server/auth'
 import { checkRateLimit } from '@/lib/rate-limiting'
+import {
+  checkQuota,
+  getUserSubscriptionTier,
+  getUsageCount,
+  incrementUsage,
+} from '@server/usage'
 
 describe('Announcements API routes', () => {
   const baseAnnouncement = {
@@ -90,6 +106,9 @@ describe('Announcements API routes', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    ;(getUserSubscriptionTier as jest.Mock).mockResolvedValue('free')
+    ;(getUsageCount as jest.Mock).mockResolvedValue(0)
+    ;(incrementUsage as jest.Mock).mockResolvedValue(1)
   })
 
   describe('GET /api/announcements', () => {
@@ -192,6 +211,36 @@ describe('Announcements API routes', () => {
       expect(payload.error).toBe('Validation failed')
     })
 
+    it('returns 429 when the free plan announcement quota is reached', async () => {
+      const user = { id: 'user-1', role: 'member', email: 'user@example.com', status: 'active' }
+      ;(requireUser as jest.Mock).mockResolvedValue(user)
+      ;(checkRateLimit as jest.Mock).mockResolvedValue({ allowed: true })
+      ;(getUserSubscriptionTier as jest.Mock).mockResolvedValue('free')
+
+      const quota = checkQuota('free', 'announcements')
+      expect(quota.limit).not.toBeNull()
+      ;(getUsageCount as jest.Mock).mockResolvedValue(quota.limit)
+
+      const response = await createAnnouncementRoute(
+        createRequest('http://localhost/api/announcements', {
+          method: 'POST',
+          body: {
+            type: 'general',
+            title: 'Community Update',
+            body: 'Welcome to the community!',
+          },
+        }),
+      )
+
+      expect(response.status).toBe(429)
+      const payload = await response.json()
+      expect(payload.error).toMatch(/announcement/i)
+      expect(payload.limit).toBe(quota.limit)
+      expect(payload.period).toBe(quota.period)
+      expect(createAnnouncement).not.toHaveBeenCalled()
+      expect(incrementUsage).not.toHaveBeenCalled()
+    })
+
     it('creates an announcement when payload is valid', async () => {
       const user = { id: 'admin-1', role: 'admin', email: 'admin@example.com', status: 'active' }
       ;(requireUser as jest.Mock).mockResolvedValue(user)
@@ -235,6 +284,8 @@ describe('Announcements API routes', () => {
         },
         user,
       )
+      expect(getUserSubscriptionTier).not.toHaveBeenCalled()
+      expect(incrementUsage).not.toHaveBeenCalled()
     })
   })
 })

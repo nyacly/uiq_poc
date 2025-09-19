@@ -20,6 +20,16 @@ jest.mock('@/lib/rate-limiting', () => ({
   checkRateLimit: jest.fn(),
 }))
 
+jest.mock('@server/usage', () => {
+  const actual = jest.requireActual('@server/usage')
+  return {
+    ...actual,
+    getUserSubscriptionTier: jest.fn(),
+    getUsageCount: jest.fn(),
+    incrementUsage: jest.fn(),
+  }
+})
+
 const createRequest = (
   url: string,
   init?: { method?: string; body?: unknown; headers?: Record<string, string> },
@@ -73,6 +83,12 @@ import {
 } from '@server/classifieds'
 import { getSessionUser, requireUser, UnauthorizedError } from '@server/auth'
 import { checkRateLimit } from '@/lib/rate-limiting'
+import {
+  checkQuota,
+  getUserSubscriptionTier,
+  getUsageCount,
+  incrementUsage,
+} from '@server/usage'
 
 const baseClassified = {
   id: '00000000-0000-0000-0000-000000000021',
@@ -103,6 +119,9 @@ const baseClassified = {
 describe('Classifieds API routes', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    ;(getUserSubscriptionTier as jest.Mock).mockResolvedValue('free')
+    ;(getUsageCount as jest.Mock).mockResolvedValue(0)
+    ;(incrementUsage as jest.Mock).mockResolvedValue(1)
   })
 
   describe('GET /api/classifieds', () => {
@@ -217,6 +236,35 @@ describe('Classifieds API routes', () => {
       expect(createClassified).not.toHaveBeenCalled()
     })
 
+    it('returns 429 when the free plan monthly quota is reached', async () => {
+      const user = { id: 'user-1', role: 'member', email: 'user@example.com', status: 'active' }
+      ;(requireUser as jest.Mock).mockResolvedValue(user)
+      ;(checkRateLimit as jest.Mock).mockResolvedValue({ allowed: true })
+      ;(getUserSubscriptionTier as jest.Mock).mockResolvedValue('free')
+
+      const quota = checkQuota('free', 'classifieds')
+      expect(quota.limit).not.toBeNull()
+      ;(getUsageCount as jest.Mock).mockResolvedValue(quota.limit)
+
+      const response = await createClassifiedRoute(
+        createRequest('http://localhost/api/classifieds', {
+          method: 'POST',
+          body: {
+            title: 'Gently Used Sofa',
+            description: 'Comfortable three-seat sofa in great condition.',
+          },
+        }),
+      )
+
+      expect(response.status).toBe(429)
+      const payload = await response.json()
+      expect(payload.error).toMatch(/classified/i)
+      expect(payload.limit).toBe(quota.limit)
+      expect(payload.period).toBe(quota.period)
+      expect(createClassified).not.toHaveBeenCalled()
+      expect(incrementUsage).not.toHaveBeenCalled()
+    })
+
     it('creates a classified listing when payload is valid', async () => {
       const user = { id: 'user-1', role: 'member', email: 'user@example.com', status: 'active' }
       ;(requireUser as jest.Mock).mockResolvedValue(user)
@@ -253,6 +301,7 @@ describe('Classifieds API routes', () => {
         }),
         user.id,
       )
+      expect(incrementUsage).toHaveBeenCalledWith(user.id, 'month', 'classifieds')
     })
   })
 })

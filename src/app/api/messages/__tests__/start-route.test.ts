@@ -20,6 +20,16 @@ jest.mock('@/lib/rate-limiting', () => ({
   checkRateLimit: jest.fn(),
 }))
 
+jest.mock('@server/usage', () => {
+  const actual = jest.requireActual('@server/usage')
+  return {
+    ...actual,
+    getUserSubscriptionTier: jest.fn(),
+    getUsageCount: jest.fn(),
+    incrementUsage: jest.fn(),
+  }
+})
+
 const createRequest = (url: string, init?: { method?: string; body?: unknown; headers?: Record<string, string> }) => {
   const serializedBody =
     typeof init?.body === 'string' ? init.body : init?.body !== undefined ? JSON.stringify(init.body) : undefined
@@ -60,6 +70,12 @@ import { POST as startConversationRoute } from '../start/route'
 import { HttpError, UnauthorizedError, requireUser } from '@server/auth'
 import { checkRateLimit } from '@/lib/rate-limiting'
 import { startConversation, serializeConversation, serializeMessage } from '@server/messages'
+import {
+  checkQuota,
+  getUserSubscriptionTier,
+  getUsageCount,
+  incrementUsage,
+} from '@server/usage'
 
 describe('POST /api/messages/start', () => {
   const baseUser = {
@@ -71,6 +87,9 @@ describe('POST /api/messages/start', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    ;(getUserSubscriptionTier as jest.Mock).mockResolvedValue('free')
+    ;(getUsageCount as jest.Mock).mockResolvedValue(0)
+    ;(incrementUsage as jest.Mock).mockResolvedValue(1)
   })
 
   it('requires authentication', async () => {
@@ -125,6 +144,33 @@ describe('POST /api/messages/start', () => {
     expect(response.status).toBe(400)
     const payload = await response.json()
     expect(payload.error).toBe('Validation failed')
+  })
+
+  it('returns 429 when the free plan daily message quota is reached', async () => {
+    ;(requireUser as jest.Mock).mockResolvedValue(baseUser)
+    ;(checkRateLimit as jest.Mock).mockResolvedValue({ allowed: true })
+    ;(getUserSubscriptionTier as jest.Mock).mockResolvedValue('free')
+
+    const quota = checkQuota('free', 'messages')
+    expect(quota.limit).not.toBeNull()
+    ;(getUsageCount as jest.Mock).mockResolvedValue(quota.limit)
+
+    const response = await startConversationRoute(
+      createRequest('http://localhost/api/messages/start', {
+        body: {
+          targetUserId: '22222222-2222-2222-2222-222222222222',
+          firstMessage: 'Hello there',
+        },
+      }),
+    )
+
+    expect(response.status).toBe(429)
+    const payload = await response.json()
+    expect(payload.error).toMatch(/messaging/i)
+    expect(payload.limit).toBe(quota.limit)
+    expect(payload.period).toBe(quota.period)
+    expect(startConversation).not.toHaveBeenCalled()
+    expect(incrementUsage).not.toHaveBeenCalled()
   })
 
   it('creates a conversation and returns serialized data', async () => {
@@ -200,6 +246,7 @@ describe('POST /api/messages/start', () => {
       },
       baseUser,
     )
+    expect(incrementUsage).toHaveBeenCalledWith(baseUser.id, 'day', 'messages')
   })
 
   it('handles server errors gracefully', async () => {

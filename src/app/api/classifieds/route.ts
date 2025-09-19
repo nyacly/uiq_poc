@@ -3,12 +3,19 @@ import { z } from 'zod'
 
 import { checkRateLimit } from '@/lib/rate-limiting'
 import {
+  checkQuota,
+  getUsageCount,
+  getUserSubscriptionTier,
+  incrementUsage,
+} from '@server/usage'
+import {
   classifiedCreateSchema,
   createClassified,
   listClassifieds,
   serializeClassified,
 } from '@server/classifieds'
 import { HttpError, getSessionUser, requireUser } from '@server/auth'
+import type { SubscriptionPlan } from '@shared/schema'
 
 const querySchema = z.object({
   q: z.string().trim().min(2).max(255).optional(),
@@ -81,6 +88,30 @@ export async function POST(request: Request) {
       )
     }
 
+    let quota: ReturnType<typeof checkQuota> | null = null
+    let subscriptionTier: SubscriptionPlan | null = null
+
+    if (user.role !== 'admin') {
+      subscriptionTier = await getUserSubscriptionTier(user.id)
+      quota = checkQuota(subscriptionTier, 'classifieds')
+
+      if (quota.limit !== null) {
+        const currentUsage = await getUsageCount(user.id, quota.period, 'classifieds')
+
+        if (currentUsage >= quota.limit) {
+          return NextResponse.json(
+            {
+              error: 'You have reached your monthly classified limit on the Free plan.',
+              limit: quota.limit,
+              period: quota.period,
+              tier: subscriptionTier,
+            },
+            { status: 429 },
+          )
+        }
+      }
+    }
+
     const body = await request.json()
     const parsed = classifiedCreateSchema.safeParse(body)
 
@@ -95,6 +126,10 @@ export async function POST(request: Request) {
     }
 
     const classified = await createClassified(parsed.data, user.id)
+
+    if (user.role !== 'admin' && quota) {
+      await incrementUsage(user.id, quota.period, 'classifieds')
+    }
 
     return NextResponse.json(
       { classified: serializeClassified(classified) },

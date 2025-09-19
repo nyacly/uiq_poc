@@ -1,7 +1,14 @@
 import { NextResponse } from 'next/server'
 
 import { checkRateLimit } from '@/lib/rate-limiting'
+import {
+  checkQuota,
+  getUsageCount,
+  getUserSubscriptionTier,
+  incrementUsage,
+} from '@server/usage'
 import { HttpError, requireUser } from '@server/auth'
+import type { SubscriptionPlan } from '@shared/schema'
 import {
   serializeConversation,
   serializeMessage,
@@ -34,6 +41,30 @@ export async function POST(request: Request) {
       )
     }
 
+    let quota: ReturnType<typeof checkQuota> | null = null
+    let subscriptionTier: SubscriptionPlan | null = null
+
+    if (user.role !== 'admin') {
+      subscriptionTier = await getUserSubscriptionTier(user.id)
+      quota = checkQuota(subscriptionTier, 'messages')
+
+      if (quota.limit !== null) {
+        const currentUsage = await getUsageCount(user.id, quota.period, 'messages')
+
+        if (currentUsage >= quota.limit) {
+          return NextResponse.json(
+            {
+              error: 'Daily messaging limit reached for the Free plan. Upgrade for unlimited chats.',
+              limit: quota.limit,
+              period: quota.period,
+              tier: subscriptionTier,
+            },
+            { status: 429 },
+          )
+        }
+      }
+    }
+
     const body = await request.json()
     const parsed = startConversationSchema.safeParse(body)
 
@@ -48,6 +79,10 @@ export async function POST(request: Request) {
     }
 
     const result = await startConversation(parsed.data, user)
+
+    if (user.role !== 'admin' && quota) {
+      await incrementUsage(user.id, quota.period, 'messages')
+    }
 
     return NextResponse.json(
       {
