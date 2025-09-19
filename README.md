@@ -8,359 +8,304 @@ A comprehensive community platform designed for the Ugandan community in Queensl
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-blue?logo=tailwindcss)
 ![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?logo=vercel)
 
-Health check: /api/health
+---
+
+## 🚀 Quick start (10 minutes)
+
+| Step | Command | Notes |
+| ---- | ------- | ----- |
+| 1. Clone & install | `git clone https://github.com/nyacly/uiq_poc.git && cd uiq_poc && npm install` | Node.js 20+ recommended. |
+| 2. Copy env template | `cp .env.example .env.local` | Set `DATABASE_URL`, `NEXTAUTH_SECRET`, Stripe keys, `NEXT_PUBLIC_MAPBOX_TOKEN`. |
+| 3. Start PostgreSQL | `docker run --rm -it -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=uiq_dev -p 5432:5432 postgres:16` | Or point `DATABASE_URL` at an existing Postgres instance. |
+| 4. Apply Drizzle migrations | `npx drizzle-kit push` | Uses `drizzle.config.ts` to create/update the Postgres schema. |
+| 5. Prepare Prisma | `npm run db:push` | Creates the local SQLite file Prisma/NextAuth relies on. |
+| 6. Seed demo data | `npm run db:seed` | Populates Postgres with admin, business owner, member, and rich sample content. |
+| 7. Launch dev server | `npm run dev` | Visit http://localhost:5000. |
+
+### Seeded personas
+
+After the seed runs, list the generated user IDs so you can impersonate them via the dev cookie trick:
+
+```bash
+psql "$DATABASE_URL" -c "select id, email, role from users order by email;"
+```
+
+| Email              | Role        | Description                     |
+| ------------------ | ----------- | ------------------------------- |
+| `admin@uiq.local`  | `admin`     | Platform administrator          |
+| `owner@uiq.local`  | `moderator` | Business owner seeded for demos |
+| `member@uiq.local` | `member`    | Everyday community member       |
+
+---
+
+## 🩺 Health check
+
+- Endpoint: `GET http://localhost:5000/api/health`
+- Scripted check: `npm run health-check`
+  - Continuous mode: `npm run health-monitor`
+
+Both paths should return `{ "status": "ok" }` when the app, database, and third-party integrations are responding.
+
+---
+
+## 🔐 Dev session cookie trick
+
+The backend trusts the cookie `x-dev-user-id` in development. Drop a seeded user ID into the cookie to masquerade as that account without building a UI flow:
+
+```js
+// Run in the browser console on http://localhost:5000
+document.cookie = `x-dev-user-id=<uuid-from-users-table>; path=/`;
+```
+
+Reload and all server API routes will treat the request as that user. Remove the override with:
+
+```js
+document.cookie = 'x-dev-user-id=; Max-Age=0; path=/';
+```
+
+---
+
+## ✅ Tests & quality gates
+
+| Purpose | Command |
+| ------- | ------- |
+| Linting | `npm run lint` |
+| Type checking | `npm run type-check` |
+| Unit/API tests | `npm run test` |
+| Playwright E2E | `npm run test:e2e` |
+| CI-equivalent suite | `npm run test:all` |
+
+Playwright uses the `x-dev-user-id` cookie helper (see `e2e/api-happy-path.spec.ts`) to authenticate requests.
+
+---
+
+## 🧪 Webhook mocking (Stripe)
+
+1. Ensure `npm run dev` is running.
+2. Paste a user ID from the seed output into the payload below.
+3. Send the request to the local webhook endpoint:
+
+```bash
+curl -X POST http://localhost:5000/api/stripe/webhook \
+  -H "Content-Type: application/json" \
+  -d '{
+    "type": "customer.subscription.created",
+    "data": {
+      "object": {
+        "id": "sub_test_local",
+        "status": "active",
+        "customer": "cus_test_local",
+        "metadata": { "userId": "<uuid-from-users-table>", "tier": "PLUS" },
+        "items": { "data": [ { "price": { "metadata": { "tier": "PLUS" } } } ] },
+        "current_period_start": 1735689600,
+        "current_period_end": 1738281600
+      }
+    }
+  }'
+```
+
+A successful call responds with `{ "received": true }`. To test against Stripe’s CLI, run `stripe listen --forward-to localhost:5000/api/stripe/webhook` and export `STRIPE_WEBHOOK_SECRET`.
+
+---
+
+## ☁️ Deployment (Vercel runbook)
+
+Configure these variables in Vercel → Settings → Environment Variables for **Preview** and **Production**:
+
+| Key | Why it matters |
+| --- | -------------- |
+| `DATABASE_URL` | Primary Postgres database (Neon/Supabase/RDS/etc.). |
+| `NEXTAUTH_URL` | Full domain of the deployed site. |
+| `NEXTAUTH_SECRET` | 32+ character secret for NextAuth JWTs. |
+| `STRIPE_SECRET_KEY` | Stripe secret key (live mode for production). |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Frontend key for Stripe Elements. |
+| `STRIPE_WEBHOOK_SECRET` | Signature secret from Stripe dashboard. |
+| `NEXT_PUBLIC_MAPBOX_TOKEN` | Required for interactive maps. |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER` | Twilio SMS delivery. |
+| Optional analytics (`SENTRY_DSN`, `GOOGLE_ANALYTICS_ID`, etc.) | Enable observability tooling. |
+| Feature flags (`ENABLE_PAYMENTS`, `ENABLE_SMS_NOTIFICATIONS`) | Keep `true` to ship the full experience. |
+
+> 💡 Ship your Drizzle migrations (`drizzle/*.sql`) with every deploy. The CI/CD pipeline applies them before the Next.js build runs.
+
+---
 
 ## ✨ Features
 
-### 🏢 **Business Directory**
+### 🏢 Business Directory
 - Comprehensive local business listings
 - Category-based browsing (restaurants, services, retail, etc.)
 - Business profiles with contact information and reviews
 - Location-based search with interactive maps
 - Business verification and premium listings
 
-### 📅 **Community Events**
+### 📅 Community Events
 - Event discovery and RSVP functionality
 - Community calendar with filtering options
 - Event categories (cultural, business, social, educational)
 - Organizer tools for event management
 - Location-based event recommendations
 
-### 🛍️ **Classifieds & Marketplace**
+### 🛍️ Classifieds & Marketplace
 - Buy/sell community marketplace
 - Job postings and opportunities
 - Housing and accommodation listings
 - Services and professional offerings
 - Messaging system (database schema ready, frontend UI in development)
 
-### 👥 **User Management**
+### 👥 User Management
 - User authentication and profiles
 - Membership tiers (Free, Plus, Family)
 - Business account management
 - Community engagement features
 - Privacy controls and settings
 
-### 🔔 **Communication**
+### 🔔 Communication
 - Messaging system (database schema implemented, real-time features in development)
 - Community announcements
 - SMS notifications for verification (Twilio integration)
 - Email updates and newsletters (planned)
 - Push notifications (planned for mobile apps)
 
-### 💳 **Payments & Subscriptions**
+### 💳 Payments & Subscriptions
 - Stripe payment processing
 - Subscription management
 - Business premium features
 - Secure transaction handling
 - Payment history and receipts
 
-## 🏗️ **Tech Stack**
+---
 
-### **Frontend**
-- **Next.js 15.5.3** - React framework with App Router
-- **TypeScript** - Type-safe development
-- **Tailwind CSS** - Utility-first CSS framework
-- **React Hook Form** - Form management
-- **Lucide React** - Icon library
-- **Mapbox GL** - Interactive maps
+## 🏗️ Tech stack
 
-### **Backend**
-- **Node.js** - Runtime environment
-- **Next.js API Routes** - Serverless functions
-- **PostgreSQL** - Primary database
-- **Drizzle ORM** - Type-safe database toolkit
-- **Row-Level Security (RLS)** - Database security
+### Frontend
+- **Next.js 15.5.3** – App Router with React Server Components
+- **TypeScript** – Fully typed codebase
+- **Tailwind CSS** – Utility-first styling
+- **React Hook Form** – Form state management
+- **Lucide React** – Iconography
+- **Mapbox GL** – Map visualisations
 
-### **Integrations**
-- **Stripe** - Payment processing
-- **Twilio** - SMS notifications
-- **Supabase/PostgreSQL** - Database hosting
-- **Vercel** - Deployment and hosting
+### Backend
+- **Next.js API routes** – Serverless edge-first endpoints
+- **Drizzle ORM** – Type-safe queries against Postgres
+- **Row-Level Security (RLS)** – Enforced at the database layer
 
-### **DevOps & CI/CD**
-- **GitHub Actions** - Automated CI/CD pipeline
-- **Playwright** - End-to-end testing
-- **Jest** - Unit testing
-- **Lighthouse CI** - Performance monitoring
-- **ESLint & Prettier** - Code quality
-- **Snyk** - Security scanning
+### Integrations
+- **Stripe** – Payments and subscriptions
+- **Twilio** – SMS notifications
+- **Mapbox** – Mapping services
+- **Vercel** – Hosting & edge runtime
 
-## 🚀 **Quick Start**
-
-### **Prerequisites**
-- Node.js 20.x or later
-- PostgreSQL database
-- Git
-
-### **Installation**
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/nyacly/uiq_poc.git
-   cd uiq_poc
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env.local
-   ```
-   
-   Fill in your environment variables (see [Environment Variables](#-environment-variables) section).
-
-4. **Set up the database and seed sample content**
-   ```bash
-   npm run db:setup
-   ```
-
-   This command pushes the Prisma schema to the local SQLite database and seeds it with rich sample data so the application has
-   businesses, events, listings, and announcements to explore straight away.
-
-5. **Start development server**
-   ```bash
-   npm run dev
-   ```
-
-6. **Open your browser**
-   ```
-   http://localhost:5000
-   ```
-
-> 💡 **Default login credentials**
->
-> The seed script provisions ready-to-use accounts so you can explore different user journeys immediately:
-> - Admin: `admin@uiq.com` / `changeme123`
-> - Business owner: `business1@example.com` / `changeme123`
-> - Community member: `member1@example.com` / `changeme123`
-
-## 📝 **Environment Variables**
-
-Create a `.env.local` file based on `.env.example`:
-
-### **Database**
-```env
-DATABASE_URL=postgresql://username:password@localhost:5432/uiq_community_platform
-SQLITE_DATABASE_URL=file:./prisma/dev.db
-PGHOST=localhost
-PGPORT=5432
-PGUSER=postgres
-PGPASSWORD=your_password
-PGDATABASE=uiq_community_platform
-```
-
-### **Authentication**
-```env
-NEXTAUTH_URL=http://localhost:5000
-NEXTAUTH_SECRET=your_secret_key
-SESSION_SECRET=your_session_secret
-```
-
-### **Payments (Stripe)**
-```env
-STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_public_key
-```
-
-### **SMS (Twilio)**
-```env
-TWILIO_ACCOUNT_SID=your_twilio_account_sid
-TWILIO_AUTH_TOKEN=your_twilio_auth_token
-TWILIO_PHONE_NUMBER=+1234567890
-```
-
-`SQLITE_DATABASE_URL` is used exclusively by Prisma for the legacy SQLite workflow. It defaults to `file:./prisma/dev.db` when not
-provided so deployments that only configure PostgreSQL will continue to succeed. For detailed setup instructions, see
-`SECRETS_DOCUMENTATION.md`.
-
-## 🛠️ **Development**
-
-### **Available Scripts**
-
-```bash
-# Development
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run start        # Start production server
-
-# Testing
-npm run test         # Run unit tests
-npm run test:watch   # Run tests in watch mode
-npm run test:e2e     # Run end-to-end tests
-npm run test:all     # Run all tests
-
-# Code Quality
-npm run lint         # Run ESLint
-npm run lint:fix     # Fix ESLint errors
-npm run type-check   # Check TypeScript types
-
-# Database
-npm run db:push      # Push schema changes to database
-npm run db:studio    # Open database studio
-npm run db:generate  # Generate migrations
-
-# Performance
-npm run lighthouse   # Run Lighthouse audits
-npm run performance  # Run custom performance tests
-npm run health-check # Check application health
-```
-
-### **Project Structure**
-
-```
-├── .github/workflows/     # CI/CD pipelines (ci.yml, deploy.yml)
-├── attached_assets/       # Project assets and uploads
-├── e2e/                  # End-to-end tests (Playwright)
-├── monitoring/           # Prometheus/Grafana configs
-├── scripts/              # Utility scripts (health-check, performance)
-├── server/               # Server-side utilities (db.ts, storage.ts)
-├── shared/               # Shared schema and types (schema.ts)
-├── src/
-│   ├── app/             # Next.js App Router pages & API routes
-│   ├── components/      # React components (organized by feature)
-│   ├── hooks/           # Custom React hooks
-│   ├── lib/             # Utility libraries (auth, stripe, etc.)
-│   ├── styles/          # CSS and styling files
-│   └── types/           # TypeScript type definitions
-├── drizzle.config.ts    # Database ORM configuration
-├── next.config.js       # Next.js configuration
-├── package.json         # Dependencies and scripts
-├── tailwind.config.js   # Tailwind CSS configuration
-├── vercel.json          # Vercel deployment config
-├── LICENSE              # MIT license
-└── README.md           # This file
-```
-
-## 🚦 **CI/CD Pipeline**
-
-Our automated CI/CD pipeline includes:
-
-### **Continuous Integration**
-- ✅ **Code Quality**: ESLint, TypeScript checking
-- ✅ **Testing**: Unit tests (Jest), E2E tests (Playwright)
-- ✅ **Security**: Vulnerability scanning (Snyk, npm audit)
-- ✅ **Performance**: Lighthouse CI monitoring
-- ✅ **Build Verification**: Production build testing
-
-### **Continuous Deployment**
-- ✅ **Production**: Auto-deploy from `main` branch to Vercel
-- ✅ **Preview**: Deploy preview environments for pull requests
-- ✅ **Environment Management**: Secure secrets and variables
-- ✅ **Monitoring**: Health checks and performance tracking
-
-### **Pipeline Triggers**
-- Push to `main` → Production deployment
-- Pull requests → Preview deployment
-- Manual dispatch → On-demand deployment
-
-## 📊 **Performance & Monitoring**
-
-### **Performance Targets**
-- ⚡ **Core Web Vitals**: LCP < 2.5s, FID < 100ms, CLS < 0.1
-- 📱 **Mobile Performance**: Lighthouse score > 80
-- 🔒 **Security**: Basic security headers implemented
-- ♿ **Accessibility**: WCAG 2.1 AA compliance
-
-### **Monitoring Stack**
-- **Health Endpoint**: `/api/health` - Application status
-- **Lighthouse CI**: Automated performance auditing
-- **Custom Metrics**: Performance monitoring scripts
-- **Uptime Monitoring**: Health checks and monitoring tools
-
-## 🚀 **Deployment**
-
-### **Vercel Deployment**
-The application is configured for seamless deployment on Vercel:
-
-1. **Connect Repository**: Link your GitHub repository to Vercel
-2. **Configure Environment**: Add environment variables in Vercel dashboard
-3. **Deploy**: Automatic deployment on push to main branch
-
-### **Manual Deployment**
-```bash
-# Using Vercel CLI
-npm i -g vercel
-vercel --prod
-```
-
-
-## 🔒 **Security**
-
-### **Database Security**
-- ✅ Row-Level Security (RLS) policies
-- ✅ User data isolation
-- ✅ SQL injection prevention
-- ✅ Secure connection strings
-
-### **Application Security**
-- ✅ HTTPS enforcement
-- ✅ Security headers (XSS protection, frame options, content type options)
-- ✅ CSRF protection
-- ✅ Rate limiting
-- ✅ Input validation and sanitization
-
-### **API Security**
-- ✅ JWT authentication
-- ✅ API rate limiting
-- ✅ CORS configuration
-- ✅ Request validation
-
-## 🤝 **Contributing**
-
-We welcome contributions to the UiQ Community Platform! Please follow these guidelines:
-
-### **Development Workflow**
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
-4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
-
-### **Code Standards**
-- Follow existing code style and conventions
-- Write TypeScript with proper types
-- Add tests for new functionality
-- Update documentation as needed
-- Ensure CI pipeline passes
-
-### **Pull Request Process**
-- Provide clear description of changes
-- Include screenshots for UI changes
-- Ensure all tests pass
-- Request review from maintainers
-- Address feedback promptly
-
-## 📞 **Support & Community**
-
-### **Getting Help**
-- 📖 **Documentation**: Check existing docs and README
-- 🐛 **Bug Reports**: Open an issue with reproduction steps
-- 💡 **Feature Requests**: Discuss in GitHub Discussions
-- 🔧 **Technical Support**: Contact the development team
-
-### **Community Guidelines**
-- Be respectful and inclusive
-- Help fellow community members
-- Share knowledge and experiences
-- Report issues constructively
-- Celebrate successes together
-
-## 📄 **License**
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🏆 **Acknowledgments**
-
-- **Queensland Ugandan Community** - For inspiration and feedback
-- **Open Source Contributors** - For the amazing tools and libraries
-- **Development Team** - For dedication and hard work
-- **Community Members** - For testing and valuable input
+### DevOps & CI/CD
+- **GitHub Actions** – Automated CI/CD
+- **Playwright & Jest** – E2E and unit testing
+- **Lighthouse CI** – Performance monitoring
+- **ESLint & Prettier** – Code quality tooling
 
 ---
 
-**Built with ❤️ for the Ugandan community in Queensland, Australia**
+## 🛠️ Development scripts
 
-For more information, visit our [GitHub repository](https://github.com/nyacly/uiq_poc) or contact the development team.
+```bash
+# Development
+npm run dev          # Start Next.js locally
+npm run build        # Production build
+npm run start        # Run the build locally
+
+# Quality & tests
+npm run lint         # ESLint
+npm run type-check   # TypeScript
+npm run test         # Jest
+npm run test:e2e     # Playwright
+npm run test:all     # Lint + type-check + Jest + Playwright
+
+# Database (Prisma/Drizzle helpers)
+npx drizzle-kit push # Apply Drizzle migrations
+npm run db:seed      # Seed Postgres data
+npm run db:push      # Sync Prisma SQLite schema for NextAuth
+npm run db:studio    # Explore the Prisma SQLite DB
+
+# Ops
+npm run health-check # Single health probe
+npm run performance  # Performance monitor script
+npm run lighthouse   # Lighthouse CI audit
+```
+
+Project structure, CI/CD, security posture, and contribution guidelines remain unchanged from previous revisions—see below for reference.
+
+---
+
+## 📂 Project structure
+
+```
+├── .github/workflows/     # CI/CD pipelines
+├── attached_assets/       # Project assets and uploads
+├── drizzle/               # Generated SQL migrations
+├── e2e/                   # Playwright tests
+├── monitoring/            # Prometheus/Grafana configs
+├── scripts/               # Utility scripts (health-check, performance, seed)
+├── server/                # Server-side helpers (auth, db)
+├── shared/                # Shared schema and types (Drizzle)
+├── src/
+│   ├── app/               # Next.js App Router pages & API routes
+│   ├── components/        # React components by feature
+│   ├── hooks/             # Custom hooks
+│   ├── lib/               # Utilities (auth, stripe, etc.)
+│   ├── styles/            # Global styles
+│   └── types/             # TypeScript definitions
+├── drizzle.config.ts      # Drizzle configuration
+├── next.config.js         # Next.js configuration
+├── package.json           # Scripts & dependencies
+├── tailwind.config.js     # Tailwind configuration
+├── vercel.json            # Vercel deployment config
+└── README.md              # This file
+```
+
+---
+
+## 🚦 CI/CD pipeline
+
+### Continuous Integration
+- ✅ ESLint & TypeScript
+- ✅ Jest unit/API tests
+- ✅ Playwright E2E tests
+- ✅ Security scanning (Snyk, npm audit)
+- ✅ Lighthouse CI performance budget
+
+### Continuous Deployment
+- ✅ Automatic deploys from `main` → Production (Vercel)
+- ✅ Preview deploys for pull requests
+- ✅ Environment variable management through Vercel
+- ✅ Health and performance checks post-deploy
+
+---
+
+## 🔒 Security highlights
+
+- Row-Level Security policies enforced in Postgres
+- RBAC applied across server routes
+- Zod validation at the edge for all API payloads
+- Rate limiting for write-heavy endpoints
+- Input sanitisation and hardened headers
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m "Add amazing feature"`)
+4. Push to your branch (`git push origin feature/amazing-feature`)
+5. Open a pull request and request review
+
+Please run `npm run test:all` before submitting and include screenshots for notable UI changes.
+
+---
+
+## 📄 License
+
+MIT © UiQ Community Platform contributors
+
+---
+
+**Built with ❤️ for the Ugandan community in Queensland, Australia.**
