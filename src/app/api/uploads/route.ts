@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 import { checkRateLimit } from '@/lib/rate-limiting'
 import { HttpError, requireUser, UnauthorizedError } from '@server/auth'
-import { saveImageDev, SUPPORTED_IMAGE_MIME_TYPES } from '@server/storage'
+import { saveImage, SUPPORTED_IMAGE_MIME_TYPES } from '@server/storage'
 
 const MAX_IMAGE_UPLOAD_BYTES = 5 * 1024 * 1024
 const RATE_LIMIT_ENDPOINT: Parameters<typeof checkRateLimit>[1] = 'upload_media'
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const url = await saveImageDev(parsed.data.file)
+    const url = await saveImage(parsed.data.file)
 
     return NextResponse.json({ url }, { status: 201 })
   } catch (error) {

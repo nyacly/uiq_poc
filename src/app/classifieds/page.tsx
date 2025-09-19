@@ -2,12 +2,12 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { MainLayout } from '@/components/layout/MainLayout'
-import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { formatCurrency, formatRelativeTime } from '@/lib/utils'
 import { sampleListings, type SampleListing } from '@/data/sample-content'
 import { buildPageMetadata } from '@/lib/metadata'
+import { ClassifiedSubmissionForm } from '@/components/forms/ClassifiedSubmissionForm'
 
 export async function generateMetadata(): Promise<Metadata> {
   return buildPageMetadata({
@@ -93,14 +93,8 @@ export default function ClassifiedsPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-16">
         {/* Post listing CTA */}
-        <section className="bg-white border border-gray-200 rounded-2xl p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900">Share a listing with the UiQ network</h2>
-            <p className="text-gray-600 mt-2">
-              Housing, jobs, cultural experiences, and items find new homes faster when shared within community.
-            </p>
-          </div>
-          <Button size="lg">Post a new listing</Button>
+        <section className="bg-white border border-gray-200 rounded-2xl p-6">
+          <ClassifiedSubmissionForm />
         </section>
 
         {/* Listings by category */}

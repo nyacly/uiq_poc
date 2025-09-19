@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { formatRelativeTime } from '@/lib/utils'
 import { sampleBusinesses, sampleEvents } from '@/data/sample-content'
 import { buildPageMetadata } from '@/lib/metadata'
+import { BusinessSubmissionForm } from '@/components/forms/BusinessSubmissionForm'
 
 export async function generateMetadata(): Promise<Metadata> {
   return buildPageMetadata({
@@ -94,6 +95,10 @@ export default function DirectoryPage() {
       </section>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-16">
+        <section className="bg-white border border-gray-200 rounded-2xl p-6">
+          <BusinessSubmissionForm />
+        </section>
+
         {/* Categories */}
         <section>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-8">

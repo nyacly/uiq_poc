@@ -2,7 +2,7 @@ jest.mock('@server/storage', () => {
   const actual = jest.requireActual('@server/storage')
   return {
     ...actual,
-    saveImageDev: jest.fn(),
+    saveImage: jest.fn(),
   }
 })
 
@@ -34,7 +34,7 @@ const createRequest = (file?: File) => {
 }
 
 import { POST as uploadRoute } from '../route'
-import { SUPPORTED_IMAGE_MIME_TYPES, saveImageDev } from '@server/storage'
+import { SUPPORTED_IMAGE_MIME_TYPES, saveImage } from '@server/storage'
 import { requireUser, UnauthorizedError } from '@server/auth'
 import { checkRateLimit } from '@/lib/rate-limiting'
 
@@ -56,7 +56,7 @@ describe('POST /api/uploads', () => {
     const response = await uploadRoute(createRequest())
 
     expect(response.status).toBe(401)
-    expect(saveImageDev).not.toHaveBeenCalled()
+    expect(saveImage).not.toHaveBeenCalled()
   })
 
   it('enforces rate limits', async () => {
@@ -76,7 +76,7 @@ describe('POST /api/uploads', () => {
     expect(response.status).toBe(429)
     const payload = await response.json()
     expect(payload.error).toMatch(/too many uploads/i)
-    expect(saveImageDev).not.toHaveBeenCalled()
+    expect(saveImage).not.toHaveBeenCalled()
   })
 
   it('rejects invalid files', async () => {
@@ -93,7 +93,7 @@ describe('POST /api/uploads', () => {
     const payload = await response.json()
     expect(payload.error).toBe('Validation failed')
     expect(payload.details.fieldErrors.file).toBeDefined()
-    expect(saveImageDev).not.toHaveBeenCalled()
+    expect(saveImage).not.toHaveBeenCalled()
   })
 
   it('requires a file to be provided', async () => {
@@ -106,13 +106,13 @@ describe('POST /api/uploads', () => {
     const payload = await response.json()
     expect(payload.error).toBe('Validation failed')
     expect(payload.details.fieldErrors.file).toBeDefined()
-    expect(saveImageDev).not.toHaveBeenCalled()
+    expect(saveImage).not.toHaveBeenCalled()
   })
 
   it('saves the file and returns a URL', async () => {
     ;(requireUser as jest.Mock).mockResolvedValue(baseUser)
     ;(checkRateLimit as jest.Mock).mockResolvedValue({ allowed: true })
-    ;(saveImageDev as jest.Mock).mockResolvedValue('/assets/photo.png')
+    ;(saveImage as jest.Mock).mockResolvedValue('/assets/photo.png')
 
     const validMimeType = Array.from(SUPPORTED_IMAGE_MIME_TYPES.keys())[0] ?? 'image/png'
     const file = new File(['image-bytes'], 'photo.png', { type: validMimeType })
@@ -122,7 +122,7 @@ describe('POST /api/uploads', () => {
     expect(response.status).toBe(201)
     const payload = await response.json()
     expect(payload.url).toBe('/assets/photo.png')
-    expect(saveImageDev).toHaveBeenCalledTimes(1)
-    expect(saveImageDev).toHaveBeenCalledWith(file)
+    expect(saveImage).toHaveBeenCalledTimes(1)
+    expect(saveImage).toHaveBeenCalledWith(file)
   })
 })
