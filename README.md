@@ -118,8 +118,32 @@ Configure these variables in Vercel → Settings → Environment Variables for *
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER` | Twilio SMS delivery. |
 | Optional analytics (`SENTRY_DSN`, `GOOGLE_ANALYTICS_ID`, etc.) | Enable observability tooling. |
 | Feature flags (`ENABLE_PAYMENTS`, `ENABLE_SMS_NOTIFICATIONS`) | Keep `true` to ship the full experience. |
+| `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | Configure Supabase Storage uploads (`service_role` is preferred in production). |
 
 > 💡 Ship your Drizzle migrations (`drizzle/*.sql`) with every deploy. The CI/CD pipeline applies them before the Next.js build runs.
+
+---
+
+### 🖼️ Media storage
+
+- **Development** – uploads remain local in `attached_assets/` and are served via `/assets/*` so existing URLs keep working.
+- **Production/preview** – when `SUPABASE_URL` and either `SUPABASE_SERVICE_ROLE_KEY` or `SUPABASE_ANON_KEY` are configured, `/api/uploads` streams files to the Supabase Storage bucket `public/uiq` and returns public URLs.
+- **Bucket policies** – create a Supabase Storage bucket named `public` with a `uiq/` folder and lock it down with:
+
+```sql
+-- Allow anonymous public reads for published media
+create policy "uiq_public_read"
+on storage.objects for select
+using (bucket_id = 'public');
+
+-- Limit writes/deletes to the service role (API enforces owner/admin rules)
+create policy "uiq_server_writes"
+on storage.objects for all
+using (bucket_id = 'public' and auth.role() = 'service_role')
+with check (bucket_id = 'public' and auth.role() = 'service_role');
+```
+
+The upload API already checks the signed-in user’s role, so pairing those policies with the service-role key keeps the bucket private while maintaining public CDN access.
 
 ---
 
