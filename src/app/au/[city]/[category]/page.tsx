@@ -1,4 +1,5 @@
 import { Metadata } from 'next'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Suspense } from 'react'
 import { MainLayout } from '@/components/layout/MainLayout'
@@ -263,14 +264,17 @@ function CityCategoryPageContents({ params, _searchParams }: Props) {
                         Know a great business? Help us grow the community!
                       </p>
                       <div className="space-y-3">
-                        <a
+                        <Link
                           href="/directory/submit"
                           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700"
                         >
                           Add Your Business
-                        </a>
+                        </Link>
                         <div className="text-sm text-gray-500">
-                          or <a href="/contact" className="text-red-600 hover:text-red-700">suggest a business</a>
+                          or{' '}
+                          <Link href="/contact" className="text-red-600 hover:text-red-700">
+                            suggest a business
+                          </Link>
                         </div>
                       </div>
                     </div>

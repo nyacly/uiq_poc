@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 
+import { getSiteUrl } from '@/lib/metadata'
+
 const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
@@ -9,6 +11,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL(getSiteUrl()),
   title: {
     template: '%s | UiQ Community',
     default: 'UiQ - Ugandans in Queensland Community Platform'
@@ -58,10 +61,13 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable}>
       <body className={`${inter.className} antialiased bg-neutral-50 text-neutral-900`}>
+        <a href="#main-content" className="skip-to-content-link">
+          Skip to main content
+        </a>
         <Providers>
           <div className="min-h-screen flex flex-col">
             <Header />
-            <main className="flex-1">
+            <main id="main-content" tabIndex={-1} className="flex-1 focus:outline-none">
               {children}
             </main>
             <Footer />

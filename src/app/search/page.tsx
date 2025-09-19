@@ -1,13 +1,33 @@
 import { Suspense } from 'react'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { prisma } from '@/lib/db'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import { buildPageMetadata } from '@/lib/metadata'
 
 interface SearchPageProps {
   searchParams: { q?: string }
+}
+
+export async function generateMetadata({ searchParams }: SearchPageProps): Promise<Metadata> {
+  const query = searchParams.q?.trim() ?? ''
+  const hasQuery = query.length > 0
+  const title = hasQuery ? `Search: ${query}` : 'Search'
+  const description = hasQuery
+    ? `Results for "${query}" across businesses, events, announcements, and classifieds in the UiQ community.`
+    : 'Search the UiQ community for businesses, events, announcements, and classifieds tailored to Ugandans in Queensland.'
+  const path = hasQuery ? `/search?q=${encodeURIComponent(query)}` : '/search'
+
+  return buildPageMetadata({
+    title,
+    description,
+    path,
+    keywords: ['UiQ search', 'community search', 'Ugandan businesses', 'Queensland events'],
+    category: 'Search'
+  })
 }
 
 async function searchContent(query: string) {
@@ -250,7 +270,11 @@ export default function SearchPage({ searchParams }: SearchPageProps) {
         {/* Search Bar */}
         <form action="/search" method="GET" className="max-w-2xl">
           <div className="flex">
+            <label htmlFor="site-search" className="sr-only">
+              Search the UiQ community
+            </label>
             <input
+              id="site-search"
               type="search"
               name="q"
               defaultValue={query}

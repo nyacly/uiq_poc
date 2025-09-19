@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { Badge } from '@/components/ui/Badge'
@@ -5,6 +6,18 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { formatDate, formatRelativeTime } from '@/lib/utils'
 import { sampleAnnouncements } from '@/data/sample-content'
+import { buildPageMetadata } from '@/lib/metadata'
+
+export async function generateMetadata(): Promise<Metadata> {
+  return buildPageMetadata({
+    title: 'Announcements',
+    description:
+      'Read the latest announcements, milestones, and urgent updates shared by the Ugandan community across Queensland.',
+    path: '/announcements',
+    keywords: ['community announcements', 'bereavement notices', 'Ugandan news', 'Queensland community'],
+    category: 'News'
+  })
+}
 
 const announcementTypeLabels: Record<string, string> = {
   ACHIEVEMENT: 'Achievement',
