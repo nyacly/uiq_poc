@@ -24,6 +24,10 @@ jest.mock('@/lib/rate-limiting', () => ({
   checkRateLimit: jest.fn(),
 }))
 
+jest.mock('@/lib/geocode', () => ({
+  geocodeAddress: jest.fn(),
+}))
+
 const createRequest = (
   url: string,
   init?: { method?: string; body?: unknown; headers?: Record<string, string> },
@@ -85,8 +89,15 @@ import {
   UnauthorizedError,
 } from '@server/auth'
 import { checkRateLimit } from '@/lib/rate-limiting'
+import { geocodeAddress } from '@/lib/geocode'
 
 describe('Providers API routes', () => {
+  const originalMapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
+
+  afterEach(() => {
+    process.env.NEXT_PUBLIC_MAPBOX_TOKEN = originalMapboxToken
+  })
+
   beforeEach(() => {
     jest.clearAllMocks()
   })
@@ -108,6 +119,7 @@ describe('Providers API routes', () => {
       expect(listProviders).toHaveBeenCalledWith({
         query: 'plumber',
         suburb: 'CBD',
+        category: undefined,
         sessionUser: mockSession,
       })
     })
@@ -164,7 +176,49 @@ describe('Providers API routes', () => {
       expect(response.status).toBe(201)
       const payload = await response.json()
       expect(payload).toEqual({ provider: providerRecord })
-      expect(createProvider).toHaveBeenCalledWith({ name: 'Test Provider' }, user.id)
+      expect(createProvider).toHaveBeenCalledWith({ name: 'Test Provider' }, user.id, null)
+    })
+
+    it('geocodes addresses when a Mapbox token is configured', async () => {
+      const user = { id: 'user-1', role: 'member', email: 'user@example.com', status: 'active' }
+      ;(requireUser as jest.Mock).mockResolvedValue(user)
+      ;(checkRateLimit as jest.Mock).mockResolvedValue({
+        allowed: true,
+        remaining: 5,
+        resetTime: new Date(Date.now() + 60_000),
+        blocked: false,
+      })
+      const providerRecord = {
+        id: 'provider-1',
+        userId: user.id,
+        name: 'Test Provider',
+        slug: 'test-provider',
+        services: [],
+        isVerified: false,
+      }
+      ;(createProvider as jest.Mock).mockResolvedValue(providerRecord)
+      ;(geocodeAddress as jest.Mock).mockResolvedValue({
+        latitude: -27.468,
+        longitude: 153.023,
+        suburb: 'Brisbane City',
+      })
+
+      process.env.NEXT_PUBLIC_MAPBOX_TOKEN = 'mapbox-token'
+
+      const response = await listProvidersPost(
+        createRequest('http://localhost/api/providers', {
+          method: 'POST',
+          body: { name: 'Test Provider', baseLocation: '123 Queen St Brisbane' },
+        }),
+      )
+
+      expect(response.status).toBe(201)
+      expect(geocodeAddress).toHaveBeenCalledWith('123 Queen St Brisbane', 'mapbox-token')
+      expect(createProvider).toHaveBeenCalledWith(
+        { name: 'Test Provider', baseLocation: '123 Queen St Brisbane', suburb: 'Brisbane City' },
+        user.id,
+        { latitude: -27.468, longitude: 153.023, suburb: 'Brisbane City' },
+      )
     })
 
     it('enforces rate limiting', async () => {
@@ -297,11 +351,63 @@ describe('Providers API routes', () => {
       expect(response.status).toBe(200)
       const payload = await response.json()
       expect(payload.provider).toEqual(updatedRecord)
-      expect(updateProvider).toHaveBeenCalledWith('provider-1', {
-        name: 'Updated Provider',
-        isVerified: true,
-      })
+      expect(updateProvider).toHaveBeenCalledWith(
+        'provider-1',
+        {
+          name: 'Updated Provider',
+          isVerified: true,
+        },
+        null,
+      )
       expect(ensureOwnerOrAdmin).toHaveBeenCalledWith(session, 'owner-1')
+    })
+
+    it('geocodes address updates when baseLocation is provided', async () => {
+      const session = { id: 'owner-1', role: 'member', email: 'owner@example.com', status: 'active' }
+      ;(requireUser as jest.Mock).mockResolvedValue(session)
+      ;(getProviderById as jest.Mock).mockResolvedValue({
+        id: 'provider-1',
+        userId: 'owner-1',
+        name: 'Provider',
+        slug: 'provider',
+        isVerified: false,
+      })
+      ;(checkRateLimit as jest.Mock).mockResolvedValue({
+        allowed: true,
+        remaining: 5,
+        resetTime: new Date(Date.now() + 60_000),
+        blocked: false,
+      })
+      ;(updateProvider as jest.Mock).mockResolvedValue({
+        id: 'provider-1',
+        userId: 'owner-1',
+        name: 'Provider',
+        slug: 'provider',
+        isVerified: false,
+      })
+      ;(geocodeAddress as jest.Mock).mockResolvedValue({
+        latitude: -27.5,
+        longitude: 153.0,
+        suburb: 'South Brisbane',
+      })
+
+      process.env.NEXT_PUBLIC_MAPBOX_TOKEN = 'mapbox-token'
+
+      const response = await providerPatch(
+        createRequest('http://localhost/api/providers/provider-1', {
+          method: 'PATCH',
+          body: { baseLocation: '456 Grey St South Brisbane' },
+        }),
+        { params: { id: 'provider-1' } },
+      )
+
+      expect(response.status).toBe(200)
+      expect(geocodeAddress).toHaveBeenCalledWith('456 Grey St South Brisbane', 'mapbox-token')
+      expect(updateProvider).toHaveBeenCalledWith(
+        'provider-1',
+        { baseLocation: '456 Grey St South Brisbane', suburb: 'South Brisbane' },
+        { latitude: -27.5, longitude: 153.0, suburb: 'South Brisbane' },
+      )
     })
   })
 

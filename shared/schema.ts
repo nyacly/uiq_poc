@@ -297,6 +297,8 @@ export const serviceProviders = pgTable(
     baseLocation: varchar("base_location", { length: 255 }),
     suburb: varchar("suburb", { length: 120 }),
     state: varchar("state", { length: 120 }),
+    latitude: numeric("latitude", { precision: 9, scale: 6 }),
+    longitude: numeric("longitude", { precision: 9, scale: 6 }),
     phone: varchar("phone", { length: 32 }),
     email: varchar("email", { length: 255 }),
     website: varchar("website", { length: 512 }),

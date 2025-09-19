@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { checkRateLimit } from '@/lib/rate-limiting'
+import { geocodeAddress } from '@/lib/geocode'
 import {
   deleteProvider,
   getProviderById,
@@ -105,7 +106,21 @@ export async function PATCH(request: Request, { params }: RouteParams) {
       )
     }
 
-    const updated = await updateProvider(params.id, parsed.data)
+    const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
+    const shouldGeocode =
+      typeof mapboxToken === 'string' && mapboxToken.trim().length > 0 &&
+      typeof parsed.data.baseLocation === 'string'
+
+    const geocoded = shouldGeocode
+      ? await geocodeAddress(parsed.data.baseLocation!, mapboxToken)
+      : null
+
+    const updateInput = {
+      ...parsed.data,
+      suburb: geocoded?.suburb ?? parsed.data.suburb,
+    }
+
+    const updated = await updateProvider(params.id, updateInput, geocoded)
 
     return NextResponse.json({ provider: updated })
   } catch (error) {

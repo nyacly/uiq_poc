@@ -2,12 +2,14 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { checkRateLimit } from '@/lib/rate-limiting'
+import { geocodeAddress } from '@/lib/geocode'
 import { createProvider, listProviders, providerCreateSchema } from '@server/providers'
 import { getSessionUser, requireUser, HttpError } from '@server/auth'
 
 const querySchema = z.object({
   q: z.string().trim().min(2).max(120).optional(),
   suburb: z.string().trim().min(2).max(120).optional(),
+  category: z.string().trim().min(2).max(120).optional(),
 })
 
 const RATE_LIMIT_ENDPOINT: Parameters<typeof checkRateLimit>[1] = 'post_provider'
@@ -17,10 +19,12 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const query = searchParams.get('q')?.trim()
     const suburb = searchParams.get('suburb')?.trim()
+    const category = searchParams.get('category')?.trim()
 
     const parsed = querySchema.safeParse({
       q: query && query.length > 0 ? query : undefined,
       suburb: suburb && suburb.length > 0 ? suburb : undefined,
+      category: category && category.length > 0 ? category : undefined,
     })
 
     if (!parsed.success) {
@@ -37,6 +41,7 @@ export async function GET(request: Request) {
     const providers = await listProviders({
       query: parsed.data.q,
       suburb: parsed.data.suburb,
+      category: parsed.data.category,
       sessionUser,
     })
 
@@ -86,7 +91,21 @@ export async function POST(request: Request) {
       )
     }
 
-    const provider = await createProvider(parsed.data, user.id)
+    const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
+    const shouldGeocode =
+      typeof mapboxToken === 'string' && mapboxToken.trim().length > 0 &&
+      typeof parsed.data.baseLocation === 'string'
+
+    const geocoded = shouldGeocode
+      ? await geocodeAddress(parsed.data.baseLocation!, mapboxToken)
+      : null
+
+    const providerInput = {
+      ...parsed.data,
+      suburb: geocoded?.suburb ?? parsed.data.suburb,
+    }
+
+    const provider = await createProvider(providerInput, user.id, geocoded)
 
     return NextResponse.json({ provider }, { status: 201 })
   } catch (error) {
