@@ -73,7 +73,11 @@ const AppBar = ({
                   "relative transition-all duration-200",
                   searchFocused && "transform scale-105"
                 )}>
+                  <label htmlFor="appbar-search" className="sr-only">
+                    Search the UiQ community
+                  </label>
                   <input
+                    id="appbar-search"
                     type="search"
                     placeholder="Search businesses, events, services..."
                     value={searchQuery}

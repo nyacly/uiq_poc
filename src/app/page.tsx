@@ -1,9 +1,11 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { prisma } from '@/lib/db'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import { buildPageMetadata } from '@/lib/metadata'
 import {
   sampleAnnouncements,
   sampleBusinesses,
@@ -79,6 +81,23 @@ async function getFeaturedData() {
   }
 }
 
+export async function generateMetadata(): Promise<Metadata> {
+  return buildPageMetadata({
+    title: 'Home',
+    description:
+      'Connect with Ugandans in Queensland through verified businesses, cultural events, classifieds, and community announcements.',
+    path: '/',
+    keywords: [
+      'Ugandans in Queensland',
+      'community hub',
+      'local businesses',
+      'cultural events',
+      'classifieds'
+    ],
+    category: 'Community Platform'
+  })
+}
+
 export default async function HomePage() {
   const { businesses, events, announcements, listings } = await getFeaturedData()
 
@@ -98,7 +117,11 @@ export default async function HomePage() {
             {/* Search Bar */}
             <div className="max-w-2xl mx-auto mb-8">
               <form action="/search" method="GET" className="flex">
+                <label htmlFor="home-search" className="sr-only">
+                  Search the UiQ community
+                </label>
                 <input
+                  id="home-search"
                   type="search"
                   name="q"
                   placeholder="Search businesses, events, listings..."

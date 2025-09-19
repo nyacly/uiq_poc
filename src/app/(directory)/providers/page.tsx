@@ -1,7 +1,9 @@
+import type { Metadata } from 'next'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { ProvidersDirectoryClient } from '@/components/providers/ProvidersDirectoryClient'
 import { listProviders } from '@server/providers'
 import { getSessionUser } from '@server/auth'
+import { buildPageMetadata } from '@/lib/metadata'
 
 interface ProvidersPageProps {
   searchParams?: {
@@ -27,4 +29,14 @@ export default async function ProvidersPage({ searchParams }: ProvidersPageProps
       </div>
     </MainLayout>
   )
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  return buildPageMetadata({
+    title: 'Service Providers',
+    description: 'Browse verified community providers and specialists supporting Ugandans across Queensland.',
+    path: '/providers',
+    keywords: ['service providers', 'community specialists', 'Ugandan professionals'],
+    category: 'Services'
+  })
 }

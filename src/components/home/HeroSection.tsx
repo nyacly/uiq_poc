@@ -58,7 +58,11 @@ export function HeroSection() {
               "relative transition-all duration-300 group",
               searchFocused && "transform scale-105"
             )}>
+              <label htmlFor="hero-search" className="sr-only">
+                Search the UiQ community
+              </label>
               <input
+                id="hero-search"
                 type="search"
                 placeholder="Search businesses, events, services, or opportunities..."
                 value={searchQuery}

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { MainLayout } from '@/components/layout/MainLayout'
@@ -6,6 +7,18 @@ import { Badge } from '@/components/ui/Badge'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { formatRelativeTime } from '@/lib/utils'
 import { sampleBusinesses, sampleEvents } from '@/data/sample-content'
+import { buildPageMetadata } from '@/lib/metadata'
+
+export async function generateMetadata(): Promise<Metadata> {
+  return buildPageMetadata({
+    title: 'Business Directory',
+    description:
+      'Discover trusted Ugandan-owned businesses across Queensland and explore service categories tailored to our community.',
+    path: '/directory',
+    keywords: ['business directory', 'Ugandan businesses', 'Queensland services', 'verified businesses'],
+    category: 'Business'
+  })
+}
 
 export default function DirectoryPage() {
   const categories = Array.from(new Set(sampleBusinesses.map((business) => business.category))).sort()
@@ -31,7 +44,11 @@ export default function DirectoryPage() {
               </p>
 
               <form action="/search" method="GET" className="bg-white/10 backdrop-blur rounded-xl p-2 flex flex-col sm:flex-row gap-2">
+                <label htmlFor="directory-search" className="sr-only">
+                  Search the UiQ business directory
+                </label>
                 <input
+                  id="directory-search"
                   type="search"
                   name="q"
                   placeholder="Search by business name or service"

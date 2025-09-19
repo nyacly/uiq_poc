@@ -1,4 +1,6 @@
+import type { Metadata } from 'next'
 import { getAdminOverview } from '@server/admin'
+import { buildPageMetadata } from '@/lib/metadata'
 
 const overviewCards = (
   overview: Awaited<ReturnType<typeof getAdminOverview>>,
@@ -69,4 +71,14 @@ export default async function AdminOverviewPage() {
       </section>
     </div>
   )
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  return buildPageMetadata({
+    title: 'Admin Dashboard',
+    description: 'Moderate businesses, events, classifieds, and community reports for the UiQ platform.',
+    path: '/admin',
+    keywords: ['UiQ admin', 'moderation dashboard', 'community management'],
+    category: 'Administration'
+  })
 }

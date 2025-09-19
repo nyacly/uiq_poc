@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { MainLayout } from '@/components/layout/MainLayout'
@@ -6,6 +7,18 @@ import { Badge } from '@/components/ui/Badge'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { formatCurrency, formatRelativeTime } from '@/lib/utils'
 import { sampleListings, type SampleListing } from '@/data/sample-content'
+import { buildPageMetadata } from '@/lib/metadata'
+
+export async function generateMetadata(): Promise<Metadata> {
+  return buildPageMetadata({
+    title: 'Classifieds',
+    description:
+      'Browse community listings for housing, items for sale, and short-term gigs shared by Ugandans living in Queensland.',
+    path: '/classifieds',
+    keywords: ['community marketplace', 'housing', 'gigs', 'Ugandan classifieds', 'Queensland'],
+    category: 'Marketplace'
+  })
+}
 
 const listingTypeLabels: Record<string, { label: string; description: string }> = {
   housing: {

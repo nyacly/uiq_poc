@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { MainLayout } from '@/components/layout/MainLayout'
@@ -6,6 +7,18 @@ import { Badge } from '@/components/ui/Badge'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils'
 import { sampleEvents } from '@/data/sample-content'
+import { buildPageMetadata } from '@/lib/metadata'
+
+export async function generateMetadata(): Promise<Metadata> {
+  return buildPageMetadata({
+    title: 'Events',
+    description:
+      'Explore upcoming Ugandan community events across Queensland, from cultural celebrations to business meetups and family gatherings.',
+    path: '/events',
+    keywords: ['community events', 'Ugandan events', 'Queensland gatherings', 'cultural celebrations'],
+    category: 'Events'
+  })
+}
 
 export default function EventsPage() {
   const categories = Array.from(new Set(sampleEvents.map((event) => event.category)))
@@ -145,7 +158,7 @@ export default function EventsPage() {
                   </div>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <span className="text-sm text-gray-500">Doors open 30 minutes before start time</span>
-                    <Link href={`/events/${event.slug}`} className="inline-flex items-center text-secondary-700 font-semibold">
+                    <Link href={`/events/${event.id}`} className="inline-flex items-center text-secondary-700 font-semibold">
                       View details
                       <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

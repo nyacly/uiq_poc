@@ -56,7 +56,11 @@ export function Header() {
           {/* Search Bar */}
           <div className="flex-1 max-w-lg mx-8">
             <form onSubmit={handleSearch} className="relative">
+              <label htmlFor="header-search" className="sr-only">
+                Search the UiQ community
+              </label>
               <Input
+                id="header-search"
                 type="search"
                 placeholder="Search businesses, events, listings..."
                 value={searchQuery}
