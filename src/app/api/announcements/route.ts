@@ -1,7 +1,14 @@
 import { NextResponse } from 'next/server'
 
 import { checkRateLimit } from '@/lib/rate-limiting'
+import {
+  checkQuota,
+  getUsageCount,
+  getUserSubscriptionTier,
+  incrementUsage,
+} from '@server/usage'
 import { HttpError, getSessionUser, requireUser } from '@server/auth'
+import type { SubscriptionPlan } from '@shared/schema'
 import {
   announcementCreateSchema,
   createAnnouncement,
@@ -51,6 +58,30 @@ export async function POST(request: Request) {
       )
     }
 
+    let quota: ReturnType<typeof checkQuota> | null = null
+    let subscriptionTier: SubscriptionPlan | null = null
+
+    if (user.role !== 'admin') {
+      subscriptionTier = await getUserSubscriptionTier(user.id)
+      quota = checkQuota(subscriptionTier, 'announcements')
+
+      if (quota.limit !== null) {
+        const currentUsage = await getUsageCount(user.id, quota.period, 'announcements')
+
+        if (currentUsage >= quota.limit) {
+          return NextResponse.json(
+            {
+              error: 'You have reached your monthly announcement limit on the Free plan.',
+              limit: quota.limit,
+              period: quota.period,
+              tier: subscriptionTier,
+            },
+            { status: 429 },
+          )
+        }
+      }
+    }
+
     const body = await request.json()
     const parsed = announcementCreateSchema.safeParse(body)
 
@@ -65,6 +96,10 @@ export async function POST(request: Request) {
     }
 
     const announcement = await createAnnouncement(parsed.data, user)
+
+    if (user.role !== 'admin' && quota) {
+      await incrementUsage(user.id, quota.period, 'announcements')
+    }
 
     return NextResponse.json(
       { announcement: serializeAnnouncement(announcement) },
