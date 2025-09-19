@@ -91,19 +91,37 @@ export const PRODUCT_DEFINITIONS = {
 // Get or create Stripe customer
 export async function getOrCreateStripeCustomer(userId: string, businessId?: string): Promise<string> {
   try {
-    // For now, skip database operations and create customer directly to fix checkout
-    // TODO: Restore database integration after schema issues are resolved
-    
-    // Create Stripe customer directly without database lookup
+    const [account] = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        stripeCustomerId: users.stripeCustomerId,
+      })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1)
+
+    if (!account) {
+      throw new Error(`User ${userId} not found while creating Stripe customer`)
+    }
+
+    if (account.stripeCustomerId) {
+      return account.stripeCustomerId
+    }
+
     const stripeCustomer = await stripe.customers.create({
-      email: 'test@example.com', // Fallback email for development
-      name: 'Test User',
+      email: account.email ?? undefined,
       metadata: {
-        userId: userId,
+        userId,
         businessId: businessId || '',
-        platform: 'uiq_community'
-      }
+        platform: 'uiq_community',
+      },
     })
+
+    await db
+      .update(users)
+      .set({ stripeCustomerId: stripeCustomer.id, updatedAt: new Date() })
+      .where(eq(users.id, userId))
 
     console.log(`Created Stripe customer: ${stripeCustomer.id} for user: ${userId}`)
     return stripeCustomer.id

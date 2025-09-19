@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { AccessibleButton } from '@/components/ui/AccessibleButton'
+import { AccessibleButton, type AccessibleButtonProps } from '@/components/ui/AccessibleButton'
 import { useToast } from '@/hooks/use-toast'
 
 interface BillingPortalButtonProps {
@@ -9,13 +9,15 @@ interface BillingPortalButtonProps {
   className?: string
   children?: React.ReactNode
   variant?: 'primary' | 'secondary' | 'outline'
+  size?: AccessibleButtonProps['size']
 }
 
 export function BillingPortalButton({
   businessId,
   className,
   children,
-  variant = 'outline'
+  variant = 'outline',
+  size = 'md'
 }: BillingPortalButtonProps) {
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
@@ -74,6 +76,7 @@ export function BillingPortalButton({
       onClick={handleOpenPortal}
       disabled={loading}
       variant={variant}
+      size={size}
       className={className}
     >
       {loading ? 'Opening...' : children || 'Manage Billing'}

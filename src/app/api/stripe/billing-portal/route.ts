@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createBillingPortalSession } from '@/lib/stripe'
-import { db, stripeCustomers, businesses } from '@/lib/db'
+import { db, stripeCustomers, businesses, users } from '@/lib/db'
 import { eq } from 'drizzle-orm'
 import { requireUser, ensureOwnerOrAdmin, HttpError } from '../../../../../server/auth'
 
@@ -43,14 +43,26 @@ export async function POST(request: NextRequest) {
       }
     } else {
       // User billing portal
-      const customer = await db
-        .select()
-        .from(stripeCustomers)
-        .where(eq(stripeCustomers.userId, user.id))
+      const [account] = await db
+        .select({ stripeCustomerId: users.stripeCustomerId })
+        .from(users)
+        .where(eq(users.id, user.id))
         .limit(1)
 
-      if (customer.length > 0) {
-        stripeCustomerId = customer[0].stripeCustomerId
+      if (account?.stripeCustomerId) {
+        stripeCustomerId = account.stripeCustomerId
+      }
+
+      if (!stripeCustomerId) {
+        const customer = await db
+          .select()
+          .from(stripeCustomers)
+          .where(eq(stripeCustomers.userId, user.id))
+          .limit(1)
+
+        if (customer.length > 0) {
+          stripeCustomerId = customer[0].stripeCustomerId
+        }
       }
     }
 

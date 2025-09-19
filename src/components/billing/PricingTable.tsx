@@ -26,12 +26,13 @@ interface Product {
 
 interface PricingTableProps {
   type: 'membership' | 'business'
-  onSelectPlan: (priceId: string, productName: string) => void
+  onSelectPlan: (priceId: string, productName: string, tier?: string) => void
   currentTier?: string
   loading?: boolean
+  onPricesLoaded?: (products: Product[]) => void
 }
 
-export function PricingTable({ type, onSelectPlan, currentTier, loading }: PricingTableProps) {
+export function PricingTable({ type, onSelectPlan, currentTier, loading, onPricesLoaded }: PricingTableProps) {
   const [products, setProducts] = useState<Product[]>([])
   const [billingInterval, setBillingInterval] = useState<'month' | 'year'>('month')
   const [loadingProducts, setLoadingProducts] = useState(true)
@@ -41,7 +42,9 @@ export function PricingTable({ type, onSelectPlan, currentTier, loading }: Prici
       setLoadingProducts(true)
       const response = await fetch(`/api/stripe/products?type=${type}`)
       const data = await response.json()
-      setProducts(data.products || [])
+      const fetchedProducts: Product[] = data.products || []
+      setProducts(fetchedProducts)
+      onPricesLoaded?.(fetchedProducts)
     } catch (error) {
       console.error('Error fetching products:', error)
     } finally {
@@ -203,7 +206,7 @@ export function PricingTable({ type, onSelectPlan, currentTier, loading }: Prici
                 </div>
 
                 <AccessibleButton
-                  onClick={() => price && onSelectPlan(price.stripePriceId, product.name)}
+                  onClick={() => price && onSelectPlan(price.stripePriceId, product.name, product.tier)}
                   variant={getButtonVariant(product.tier)}
                   disabled={loading || isCurrentPlan(product.tier) || product.tier === 'free'}
                   className="w-full mb-6"

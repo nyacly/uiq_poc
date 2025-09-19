@@ -5,6 +5,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SessionProvider } from 'next-auth/react'
 import { ReactNode, useState } from 'react'
 
+import { RateLimitProvider } from '@/components/notifications/RateLimitProvider'
+import { PageViewTracker } from '@/components/analytics/PageViewTracker'
+
 interface ProvidersProps {
   children: ReactNode
 }
@@ -29,7 +32,10 @@ export function Providers({ children }: ProvidersProps) {
   return (
     <SessionProvider>
       <QueryClientProvider client={queryClient}>
-        {children}
+        <RateLimitProvider>
+          <PageViewTracker />
+          {children}
+        </RateLimitProvider>
       </QueryClientProvider>
     </SessionProvider>
   )

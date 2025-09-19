@@ -6,6 +6,7 @@ import { requireUser, UnauthorizedError } from '@server/auth'
 
 export const adminNavItems = [
   { name: 'Overview', href: '/admin' },
+  { name: 'Analytics', href: '/admin/analytics' },
   { name: 'Users', href: '/admin/users' },
   { name: 'Businesses', href: '/admin/businesses' },
   { name: 'Announcements', href: '/admin/announcements' },
