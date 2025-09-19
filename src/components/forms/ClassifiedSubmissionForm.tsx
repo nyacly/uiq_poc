@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { uploadImageViaApi } from '@/lib/uploads'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { useRateLimitNotice } from '@/components/notifications/RateLimitProvider'
 
 const classifiedFormSchema = z.object({
   title: z.string().trim().min(3, 'Title must be at least 3 characters').max(255),
@@ -92,6 +93,7 @@ export function ClassifiedSubmissionForm() {
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([])
   const [isUploading, setIsUploading] = useState(false)
+  const { showNotice } = useRateLimitNotice()
 
   const {
     register,
@@ -235,6 +237,14 @@ export function ClassifiedSubmissionForm() {
         data = text.length > 0 ? JSON.parse(text) : null
       } catch {
         data = null
+      }
+
+      if (response.status === 429) {
+        showNotice('classifieds')
+        setSubmitError(
+          'Free members can publish two classifieds each month. Upgrade to Plus for unlimited listings and faster approvals.',
+        )
+        return
       }
 
       if (!response.ok) {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { AccessibleButton } from '@/components/ui/AccessibleButton'
+import { AccessibleButton, type AccessibleButtonProps } from '@/components/ui/AccessibleButton'
 import { useToast } from '@/hooks/use-toast'
 
 interface CheckoutButtonProps {
@@ -13,6 +13,9 @@ interface CheckoutButtonProps {
   className?: string
   children?: React.ReactNode
   metadata?: Record<string, string>
+  variant?: AccessibleButtonProps['variant']
+  size?: AccessibleButtonProps['size']
+  disabled?: boolean
 }
 
 export function CheckoutButton({
@@ -23,7 +26,10 @@ export function CheckoutButton({
   trialPeriodDays,
   className,
   children,
-  metadata = {}
+  metadata = {},
+  variant = 'primary',
+  size = 'md',
+  disabled,
 }: CheckoutButtonProps) {
   const [loading, setLoading] = useState(false)
   const { toast } = useToast()
@@ -78,7 +84,9 @@ export function CheckoutButton({
   return (
     <AccessibleButton
       onClick={handleCheckout}
-      disabled={loading}
+      disabled={loading || disabled}
+      variant={variant}
+      size={size}
       className={className}
     >
       {loading ? 'Starting checkout...' : children || `Subscribe to ${productName}`}

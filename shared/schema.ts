@@ -133,6 +133,7 @@ export const users = pgTable(
       .default("FREE")
       .$type<MembershipTier>(),
     passwordHash: varchar("password_hash", { length: 255 }),
+    stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -146,6 +147,9 @@ export const users = pgTable(
     usersEmailKey: uniqueIndex("users_email_key").on(table.email),
     usersRoleIdx: index("users_role_idx").on(table.role),
     usersStatusIdx: index("users_status_idx").on(table.status),
+    usersStripeCustomerIdx: index("users_stripe_customer_idx").on(
+      table.stripeCustomerId,
+    ),
     usersMembershipTierCheck: check(
       "users_membership_tier_check",
       sql`${table.membershipTier} in ('FREE', 'PLUS', 'FAMILY')`,
@@ -799,6 +803,29 @@ export const usage = pgTable(
   }),
 );
 
+export const analyticsEvents = pgTable(
+  "analytics_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    kind: varchar("kind", { length: 64 }).notNull(),
+    path: varchar("path", { length: 512 }).notNull(),
+    userId: uuid("user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    analyticsEventsKindIdx: index("analytics_events_kind_idx").on(table.kind),
+    analyticsEventsPathIdx: index("analytics_events_path_idx").on(table.path),
+    analyticsEventsCreatedIdx: index("analytics_events_created_idx").on(
+      table.createdAt,
+    ),
+  }),
+);
+
 export const subscriptions = pgTable(
   "subscriptions",
   {
@@ -889,6 +916,8 @@ export type Report = typeof reports.$inferSelect;
 export type NewReport = typeof reports.$inferInsert;
 export type Usage = typeof usage.$inferSelect;
 export type NewUsage = typeof usage.$inferInsert;
+export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
+export type NewAnalyticsEvent = typeof analyticsEvents.$inferInsert;
 export type Subscription = typeof subscriptions.$inferSelect;
 export type NewSubscription = typeof subscriptions.$inferInsert;
 export type InsertUser = NewUser;
@@ -907,4 +936,5 @@ export type InsertParticipant = NewParticipant;
 export type InsertMessage = NewMessage;
 export type InsertReport = NewReport;
 export type InsertUsage = NewUsage;
+export type InsertAnalyticsEvent = NewAnalyticsEvent;
 export type InsertSubscription = NewSubscription;
