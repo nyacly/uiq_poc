@@ -44,9 +44,12 @@ export const RATE_LIMIT_CONFIGS = {
   // Contact/communication
   contact_form: { windowMs: 60 * 60 * 1000, maxRequests: 3 }, // 3 contact form submissions per hour
   report_submit: { windowMs: 60 * 60 * 1000, maxRequests: 10 }, // 10 reports per hour
-  
+
   // Search and browsing (more lenient)
   search: { windowMs: 60 * 1000, maxRequests: 50 }, // 50 searches per minute
+
+  // Administrative tools
+  admin_action: { windowMs: 60 * 1000, maxRequests: 40 },
 } as const
 
 // Check rate limit for a specific identifier and endpoint

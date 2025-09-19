@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useSession, signOut } from 'next-auth/react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Button } from './ui/Button'
 import { Input } from './ui/Input'
 import { Badge } from './ui/Badge'
@@ -21,7 +21,7 @@ export function Header() {
     }
   }
 
-  const navigation = [
+  const baseNavigation = [
     { name: 'Directory', href: '/directory' },
     { name: 'Providers', href: '/providers' },
     { name: 'Events', href: '/events' },
@@ -30,6 +30,14 @@ export function Header() {
     { name: 'Opportunities', href: '/opportunities' },
     { name: 'Classifieds', href: '/classifieds' },
   ]
+
+  const navigation = useMemo(() => {
+    if (!isAdmin) {
+      return baseNavigation
+    }
+
+    return [...baseNavigation, { name: 'Admin', href: '/admin' }]
+  }, [isAdmin])
 
   return (
     <header className="bg-white shadow-sm border-b">
