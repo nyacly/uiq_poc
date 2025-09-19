@@ -85,6 +85,21 @@ jest.mock('next/navigation', () => ({
   },
 }))
 
+jest.mock('next-auth', () => ({
+  __esModule: true,
+  getServerSession: jest.fn().mockResolvedValue(null),
+}))
+
+jest.mock('next-auth/providers/credentials', () => ({
+  __esModule: true,
+  default: jest.fn(() => ({ id: 'credentials', type: 'credentials' })),
+}))
+
+jest.mock('next-auth/providers/google', () => ({
+  __esModule: true,
+  default: jest.fn(() => ({ id: 'google', type: 'oauth' })),
+}))
+
 // Mock environment variables
 process.env.NODE_ENV = 'test'
 process.env.NEXT_PUBLIC_SITE_URL = 'http://localhost:3000'

@@ -16,7 +16,8 @@ export async function GET(_request: NextRequest) {
       id: sessionUser.id,
       email: sessionUser.email,
       role: sessionUser.role,
-      status: sessionUser.status
+      status: sessionUser.status,
+      membershipTier: sessionUser.membershipTier
     })
   } catch (error) {
     console.error('Auth error:', error)

@@ -1,13 +1,232 @@
-import { cookies } from 'next/headers'
 import { eq } from 'drizzle-orm'
-import { db, users } from '@/lib/db'
-import type { UserRole } from '@shared/schema'
+import { compare } from 'bcryptjs'
+import { getServerSession, type NextAuthOptions } from 'next-auth'
+import CredentialsProvider from 'next-auth/providers/credentials'
+import GoogleProvider from 'next-auth/providers/google'
+import { z } from 'zod'
 
-const DEV_USER_COOKIE = 'x-dev-user-id'
+import {
+  db,
+  profiles,
+  users,
+  type MembershipTier,
+  type UserRole,
+  type UserStatus,
+} from '@/lib/db'
 
 type UserRecord = typeof users.$inferSelect
 
-export type SessionUser = Pick<UserRecord, 'id' | 'email' | 'role' | 'status'>
+const AUTH_SECRET = process.env.NEXTAUTH_SECRET ?? 'insecure-development-secret'
+
+if (!process.env.NEXTAUTH_SECRET && process.env.NODE_ENV !== 'production') {
+  console.warn(
+    'NEXTAUTH_SECRET is not set. Falling back to an insecure development secret. Set NEXTAUTH_SECRET in your environment.',
+  )
+}
+
+const credentialsSchema = z
+  .object({
+    email: z.string().email(),
+    password: z.string().min(8),
+  })
+  .strict()
+
+const normaliseEmail = (email: string) => email.trim().toLowerCase()
+
+type ProfileSeed = {
+  userId: string
+  displayName?: string | null
+}
+
+async function ensureProfileExists({ userId, displayName }: ProfileSeed) {
+  const fallbackName = displayName?.trim()
+    ? displayName.trim().slice(0, 160)
+    : 'Community Member'
+
+  await db
+    .insert(profiles)
+    .values({
+      userId,
+      displayName: fallbackName,
+    })
+    .onConflictDoNothing({ target: profiles.userId })
+}
+
+async function upsertUserForEmail(email: string, displayName?: string | null) {
+  const normalisedEmail = normaliseEmail(email)
+  const now = new Date()
+
+  const [user] = await db
+    .insert(users)
+    .values({
+      email: normalisedEmail,
+      role: 'member',
+      status: 'active',
+      membershipTier: 'FREE',
+      lastSignInAt: now,
+      updatedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: users.email,
+      set: {
+        updatedAt: now,
+        lastSignInAt: now,
+      },
+    })
+    .returning({
+      id: users.id,
+      email: users.email,
+      role: users.role,
+      status: users.status,
+      membershipTier: users.membershipTier,
+    })
+
+  if (!user) {
+    throw new Error('Failed to upsert OAuth user')
+  }
+
+  await ensureProfileExists({ userId: user.id, displayName })
+
+  return user
+}
+
+async function updateLastSignIn(userId: string) {
+  const now = new Date()
+  await db
+    .update(users)
+    .set({
+      lastSignInAt: now,
+      updatedAt: now,
+    })
+    .where(eq(users.id, userId))
+}
+
+async function fetchUserByEmail(email: string) {
+  const [user] = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      role: users.role,
+      status: users.status,
+      membershipTier: users.membershipTier,
+      passwordHash: users.passwordHash,
+    })
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1)
+
+  return user
+}
+
+export type SessionUser = Pick<
+  UserRecord,
+  'id' | 'email' | 'role' | 'status' | 'membershipTier'
+>
+
+export const authOptions: NextAuthOptions = {
+  secret: AUTH_SECRET,
+  session: {
+    strategy: 'jwt',
+  },
+  providers: [
+    CredentialsProvider({
+      name: 'credentials',
+      credentials: {
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
+      },
+      async authorize(rawCredentials) {
+        const parsed = credentialsSchema.safeParse(rawCredentials)
+
+        if (!parsed.success) {
+          return null
+        }
+
+        const email = normaliseEmail(parsed.data.email)
+        const candidate = await fetchUserByEmail(email)
+
+        if (!candidate || !candidate.passwordHash) {
+          return null
+        }
+
+        const passwordMatches = await compare(
+          parsed.data.password,
+          candidate.passwordHash,
+        )
+
+        if (!passwordMatches) {
+          return null
+        }
+
+        await Promise.all([
+          updateLastSignIn(candidate.id),
+          ensureProfileExists({ userId: candidate.id }),
+        ])
+
+        const { passwordHash: _passwordHash, ...user } = candidate
+        return user
+      },
+    }),
+  ],
+  callbacks: {
+    async signIn({ user, account }) {
+      if (!account) {
+        return false
+      }
+
+      if (account.provider === 'google') {
+        if (!user.email) {
+          return false
+        }
+
+        const upserted = await upsertUserForEmail(user.email, user.name)
+
+        user.id = upserted.id
+        user.email = upserted.email
+        ;(user as Record<string, unknown>).role = upserted.role
+        ;(user as Record<string, unknown>).status = upserted.status
+        ;(user as Record<string, unknown>).membershipTier =
+          upserted.membershipTier
+      }
+
+      return true
+    },
+    async jwt({ token, user }) {
+      if (user) {
+        token.sub = user.id
+        token.email = user.email
+        token.role = (user as Record<string, unknown>).role
+        token.status = (user as Record<string, unknown>).status
+        token.membershipTier = (user as Record<string, unknown>).membershipTier
+      }
+
+      return token
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.sub ?? ''
+        session.user.email = token.email as string | undefined
+        session.user.role = token.role as UserRole | undefined
+        session.user.membershipTier = token.membershipTier as
+          | MembershipTier
+          | undefined
+        session.user.status = token.status as UserStatus | undefined
+      }
+
+      return session
+    },
+  },
+}
+
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  authOptions.providers.push(
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      allowDangerousEmailAccountLinking: true,
+    }),
+  )
+}
 
 export class HttpError extends Error {
   readonly status: number
@@ -34,34 +253,31 @@ export class ForbiddenError extends HttpError {
 }
 
 export async function getSessionUser(): Promise<SessionUser | null> {
-  const cookieStore = await cookies()
-  const rawUserId = cookieStore.get(DEV_USER_COOKIE)?.value?.trim()
+  const session = await getServerSession(authOptions)
 
-  if (!rawUserId) {
+  const sessionUserId = session?.user?.id
+
+  if (!sessionUserId) {
     return null
   }
 
-  try {
-    const [user] = await db
-      .select({
-        id: users.id,
-        email: users.email,
-        role: users.role,
-        status: users.status
-      })
-      .from(users)
-      .where(eq(users.id, rawUserId))
-      .limit(1)
+  const [user] = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      role: users.role,
+      status: users.status,
+      membershipTier: users.membershipTier,
+    })
+    .from(users)
+    .where(eq(users.id, sessionUserId))
+    .limit(1)
 
-    if (!user) {
-      return null
-    }
-
-    return user
-  } catch (error) {
-    console.error('Failed to resolve session user from cookie', error)
+  if (!user) {
     return null
   }
+
+  return user
 }
 
 export async function requireUser(): Promise<SessionUser> {
@@ -76,7 +292,7 @@ export async function requireUser(): Promise<SessionUser> {
 
 export function ensureOwnerOrAdmin(
   user: Pick<SessionUser, 'id' | 'role'>,
-  ownerId: string | null | undefined
+  ownerId: string | null | undefined,
 ): void {
   if (!ownerId) {
     throw new ForbiddenError('Resource is missing ownership information')
@@ -94,3 +310,4 @@ export function ensureOwnerOrAdmin(
 export function isAdmin(user: { role: UserRole }): boolean {
   return user.role === 'admin'
 }
+
