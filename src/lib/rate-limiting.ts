@@ -34,6 +34,7 @@ export const RATE_LIMIT_CONFIGS = {
   post_event: { windowMs: 60 * 60 * 1000, maxRequests: 8 }, // 8 event writes per hour
   post_announcement: { windowMs: 60 * 60 * 1000, maxRequests: 12 }, // 12 announcements per hour
   post_listing: { windowMs: 60 * 60 * 1000, maxRequests: 10 }, // 10 listings per hour
+  upload_media: { windowMs: 60 * 60 * 1000, maxRequests: 30 }, // 30 media uploads per hour
   post_message: { windowMs: 60 * 1000, maxRequests: 20 }, // 20 messages per minute
   post_review: { windowMs: 60 * 60 * 1000, maxRequests: 5 }, // 5 reviews per hour
   
