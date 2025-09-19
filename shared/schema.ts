@@ -97,6 +97,12 @@ export const subscriptionStatuses = [
 ] as const;
 export type SubscriptionStatus = (typeof subscriptionStatuses)[number];
 
+export const membershipStatuses = ["active", "inactive", "pending", "canceled"] as const;
+export type MembershipStatus = (typeof membershipStatuses)[number];
+
+export const businessSubscriptionStatuses = ["active", "inactive", "canceled"] as const;
+export type BusinessSubscriptionStatus = (typeof businessSubscriptionStatuses)[number];
+
 export const membershipTiers = ["FREE", "PLUS", "FAMILY"] as const;
 export type MembershipTier = (typeof membershipTiers)[number];
 
@@ -826,6 +832,242 @@ export const analyticsEvents = pgTable(
   }),
 );
 
+export const stripeProducts = pgTable(
+  "stripe_products",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    stripeProductId: varchar("stripe_product_id", { length: 191 }).notNull(),
+    name: varchar("name", { length: 191 }).notNull(),
+    description: text("description"),
+    type: varchar("type", { length: 64 }).notNull(),
+    tier: varchar("tier", { length: 64 }),
+    features: jsonb("features").default(sql`'[]'::jsonb`).notNull(),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`).notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    displayOrder: integer("display_order").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    stripeProductsStripeIdKey: uniqueIndex("stripe_products_stripe_product_id_key").on(
+      table.stripeProductId,
+    ),
+    stripeProductsTypeIdx: index("stripe_products_type_idx").on(table.type),
+    stripeProductsTierIdx: index("stripe_products_tier_idx").on(table.tier),
+  }),
+);
+
+export const stripePrices = pgTable(
+  "stripe_prices",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    stripePriceId: varchar("stripe_price_id", { length: 191 }).notNull(),
+    stripeProductId: varchar("stripe_product_id", { length: 191 })
+      .notNull()
+      .references(() => stripeProducts.stripeProductId, { onDelete: "cascade" }),
+    amount: integer("amount").notNull(),
+    currency: varchar("currency", { length: 16 }).notNull(),
+    interval: varchar("interval", { length: 16 }),
+    intervalCount: integer("interval_count"),
+    isActive: boolean("is_active").notNull().default(true),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    stripePricesStripeIdKey: uniqueIndex("stripe_prices_stripe_price_id_key").on(
+      table.stripePriceId,
+    ),
+    stripePricesProductIdx: index("stripe_prices_product_idx").on(table.stripeProductId),
+    stripePricesActiveIdx: index("stripe_prices_is_active_idx").on(table.isActive),
+  }),
+);
+
+export const stripeCustomers = pgTable(
+  "stripe_customers",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    stripeCustomerId: varchar("stripe_customer_id", { length: 191 }).notNull(),
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    businessId: uuid("business_id").references(() => businesses.id, {
+      onDelete: "set null",
+    }),
+    email: varchar("email", { length: 255 }),
+    name: varchar("name", { length: 255 }),
+    defaultPaymentMethodId: varchar("default_payment_method_id", { length: 191 }),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    stripeCustomersStripeIdKey: uniqueIndex("stripe_customers_stripe_customer_id_key").on(
+      table.stripeCustomerId,
+    ),
+    stripeCustomersUserIdx: index("stripe_customers_user_idx").on(table.userId),
+    stripeCustomersBusinessIdx: index("stripe_customers_business_idx").on(table.businessId),
+  }),
+);
+
+export const stripeSubscriptions = pgTable(
+  "stripe_subscriptions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    stripeSubscriptionId: varchar("stripe_subscription_id", { length: 191 }).notNull(),
+    stripeCustomerId: varchar("stripe_customer_id", { length: 191 }).notNull(),
+    stripePriceId: varchar("stripe_price_id", { length: 191 }),
+    status: varchar("status", { length: 32 }).notNull(),
+    currentPeriodStart: timestamp("current_period_start", { withTimezone: true }).notNull(),
+    currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }).notNull(),
+    cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull().default(false),
+    canceledAt: timestamp("canceled_at", { withTimezone: true }),
+    trialStart: timestamp("trial_start", { withTimezone: true }),
+    trialEnd: timestamp("trial_end", { withTimezone: true }),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    stripeSubscriptionsStripeIdKey: uniqueIndex("stripe_subscriptions_stripe_subscription_id_key").on(
+      table.stripeSubscriptionId,
+    ),
+    stripeSubscriptionsCustomerIdx: index("stripe_subscriptions_customer_idx").on(
+      table.stripeCustomerId,
+    ),
+    stripeSubscriptionsStatusIdx: index("stripe_subscriptions_status_idx").on(table.status),
+  }),
+);
+
+export const stripePayments = pgTable(
+  "stripe_payments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    stripePaymentIntentId: varchar("stripe_payment_intent_id", { length: 191 }).notNull(),
+    stripeCustomerId: varchar("stripe_customer_id", { length: 191 }),
+    amount: integer("amount").notNull(),
+    currency: varchar("currency", { length: 16 }).notNull(),
+    status: varchar("status", { length: 32 }).notNull(),
+    paymentMethodId: varchar("payment_method_id", { length: 191 }),
+    description: text("description"),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    stripePaymentsIntentKey: uniqueIndex("stripe_payments_intent_key").on(
+      table.stripePaymentIntentId,
+    ),
+    stripePaymentsCustomerIdx: index("stripe_payments_customer_idx").on(table.stripeCustomerId),
+    stripePaymentsStatusIdx: index("stripe_payments_status_idx").on(table.status),
+  }),
+);
+
+export const stripeWebhookEvents = pgTable(
+  "stripe_webhook_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    stripeEventId: varchar("stripe_event_id", { length: 191 }).notNull(),
+    eventType: varchar("event_type", { length: 191 }).notNull(),
+    processed: boolean("processed").notNull().default(false),
+    attempts: integer("attempts").notNull().default(0),
+    eventData: jsonb("event_data").default(sql`'{}'::jsonb`).notNull(),
+    processingError: text("processing_error"),
+    processedAt: timestamp("processed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    stripeWebhookEventsStripeIdKey: uniqueIndex("stripe_webhook_events_stripe_event_id_key").on(
+      table.stripeEventId,
+    ),
+    stripeWebhookEventsProcessedIdx: index("stripe_webhook_events_processed_idx").on(
+      table.processed,
+    ),
+  }),
+);
+
+export const memberships = pgTable(
+  "memberships",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tier: varchar("tier", { length: 32 })
+      .notNull()
+      .$type<MembershipTier>(),
+    status: varchar("status", { length: 32 })
+      .notNull()
+      .default("inactive")
+      .$type<MembershipStatus>(),
+    startDate: timestamp("start_date", { withTimezone: true }),
+    endDate: timestamp("end_date", { withTimezone: true }),
+    autoRenew: boolean("auto_renew").notNull().default(false),
+    stripeSubscriptionId: varchar("stripe_subscription_id", { length: 191 }),
+    grantedBy: uuid("granted_by").references(() => users.id, { onDelete: "set null" }),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    membershipsUserIdx: uniqueIndex("memberships_user_idx").on(table.userId),
+    membershipsStatusIdx: index("memberships_status_idx").on(table.status),
+  }),
+);
+
+export const businessSubscriptions = pgTable(
+  "business_subscriptions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    businessId: uuid("business_id")
+      .notNull()
+      .references(() => businesses.id, { onDelete: "cascade" }),
+    tier: varchar("tier", { length: 32 }).notNull(),
+    status: varchar("status", { length: 32 })
+      .notNull()
+      .default("inactive")
+      .$type<BusinessSubscriptionStatus>(),
+    startDate: timestamp("start_date", { withTimezone: true }),
+    endDate: timestamp("end_date", { withTimezone: true }),
+    autoRenew: boolean("auto_renew").notNull().default(false),
+    stripeSubscriptionId: varchar("stripe_subscription_id", { length: 191 }),
+    grantedBy: uuid("granted_by").references(() => users.id, { onDelete: "set null" }),
+    metadata: jsonb("metadata").default(sql`'{}'::jsonb`).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    businessSubscriptionsBusinessIdx: index("business_subscriptions_business_idx").on(
+      table.businessId,
+    ),
+    businessSubscriptionsStatusIdx: index("business_subscriptions_status_idx").on(
+      table.status,
+    ),
+  }),
+);
+
+export const rateLimits = pgTable(
+  "rate_limits",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    identifier: varchar("identifier", { length: 255 }).notNull(),
+    endpoint: varchar("endpoint", { length: 64 }).notNull(),
+    count: integer("count").notNull().default(0),
+    windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
+    windowEnd: timestamp("window_end", { withTimezone: true }).notNull(),
+    blocked: boolean("blocked").notNull().default(false),
+    blockedUntil: timestamp("blocked_until", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    rateLimitsIdentifierEndpointKey: uniqueIndex("rate_limits_identifier_endpoint_key").on(
+      table.identifier,
+      table.endpoint,
+    ),
+    rateLimitsWindowIdx: index("rate_limits_window_idx").on(table.windowEnd),
+  }),
+);
+
 export const subscriptions = pgTable(
   "subscriptions",
   {
@@ -920,6 +1162,24 @@ export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
 export type NewAnalyticsEvent = typeof analyticsEvents.$inferInsert;
 export type Subscription = typeof subscriptions.$inferSelect;
 export type NewSubscription = typeof subscriptions.$inferInsert;
+export type StripeProduct = typeof stripeProducts.$inferSelect;
+export type NewStripeProduct = typeof stripeProducts.$inferInsert;
+export type StripePrice = typeof stripePrices.$inferSelect;
+export type NewStripePrice = typeof stripePrices.$inferInsert;
+export type StripeCustomer = typeof stripeCustomers.$inferSelect;
+export type NewStripeCustomer = typeof stripeCustomers.$inferInsert;
+export type StripeSubscription = typeof stripeSubscriptions.$inferSelect;
+export type NewStripeSubscription = typeof stripeSubscriptions.$inferInsert;
+export type StripePayment = typeof stripePayments.$inferSelect;
+export type NewStripePayment = typeof stripePayments.$inferInsert;
+export type StripeWebhookEvent = typeof stripeWebhookEvents.$inferSelect;
+export type NewStripeWebhookEvent = typeof stripeWebhookEvents.$inferInsert;
+export type Membership = typeof memberships.$inferSelect;
+export type NewMembership = typeof memberships.$inferInsert;
+export type BusinessSubscription = typeof businessSubscriptions.$inferSelect;
+export type NewBusinessSubscription = typeof businessSubscriptions.$inferInsert;
+export type RateLimit = typeof rateLimits.$inferSelect;
+export type NewRateLimit = typeof rateLimits.$inferInsert;
 export type InsertUser = NewUser;
 export type InsertProfile = NewProfile;
 export type InsertBusiness = NewBusiness;
@@ -938,3 +1198,12 @@ export type InsertReport = NewReport;
 export type InsertUsage = NewUsage;
 export type InsertAnalyticsEvent = NewAnalyticsEvent;
 export type InsertSubscription = NewSubscription;
+export type InsertStripeProduct = NewStripeProduct;
+export type InsertStripePrice = NewStripePrice;
+export type InsertStripeCustomer = NewStripeCustomer;
+export type InsertStripeSubscription = NewStripeSubscription;
+export type InsertStripePayment = NewStripePayment;
+export type InsertStripeWebhookEvent = NewStripeWebhookEvent;
+export type InsertMembership = NewMembership;
+export type InsertBusinessSubscription = NewBusinessSubscription;
+export type InsertRateLimit = NewRateLimit;

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db, stripe_products, stripe_prices } from '@/lib/db'
+import { db, stripeProducts, stripePrices } from '@/lib/db'
 import { eq, and } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
@@ -9,23 +9,23 @@ export async function GET(request: NextRequest) {
     const tier = searchParams.get('tier') // free, plus, family, basic, standard, premium
 
     // Build where conditions array
-    const whereConditions = [eq(stripe_products.is_active, true)]
-    
+    const whereConditions = [eq(stripeProducts.isActive, true)]
+
     if (type) {
-      whereConditions.push(eq(stripe_products.type, type))
+      whereConditions.push(eq(stripeProducts.type, type))
     }
-    
+
     if (tier) {
-      whereConditions.push(eq(stripe_products.tier, tier))
+      whereConditions.push(eq(stripeProducts.tier, tier))
     }
 
     const query = db
       .select({
-        product: stripe_products,
-        prices: stripe_prices
+        product: stripeProducts,
+        prices: stripePrices
       })
-      .from(stripe_products)
-      .leftJoin(stripe_prices, eq(stripe_products.stripe_product_id, stripe_prices.stripe_product_id))
+      .from(stripeProducts)
+      .leftJoin(stripePrices, eq(stripeProducts.stripeProductId, stripePrices.stripeProductId))
       .where(and(...whereConditions))
 
     const results = await query
