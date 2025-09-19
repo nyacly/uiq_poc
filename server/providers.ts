@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto'
 
-import { and, desc, eq, ilike, or, type SQL } from 'drizzle-orm'
+import { and, desc, eq, ilike, or, sql, type SQL } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { db, serviceProviders, type InsertServiceProvider } from '@/lib/db'
@@ -37,8 +37,23 @@ export type ProviderUpdateInput = z.infer<typeof providerUpdateSchema>
 export type ProviderListOptions = {
   query?: string | null
   suburb?: string | null
+  category?: string | null
   limit?: number
   sessionUser?: { id: string; role: UserRole } | null
+}
+
+export type GeocodedLocation = {
+  latitude: number
+  longitude: number
+  suburb?: string | null
+}
+
+const formatCoordinate = (value?: number | null) => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return undefined
+  }
+
+  return value.toFixed(6)
 }
 
 const MAX_SLUG_ATTEMPTS = 20
@@ -127,7 +142,7 @@ export async function generateUniqueProviderSlug(name: string, excludeId?: strin
 }
 
 export async function listProviders(options: ProviderListOptions = {}) {
-  const { query, suburb, limit = MAX_SEARCH_RESULTS, sessionUser } = options
+  const { query, suburb, category, limit = MAX_SEARCH_RESULTS, sessionUser } = options
   const conditions: SQL<unknown>[] = []
 
   if (query && query.trim().length > 0) {
@@ -144,6 +159,17 @@ export async function listProviders(options: ProviderListOptions = {}) {
 
   if (suburb && suburb.trim().length > 0) {
     conditions.push(ilike(serviceProviders.suburb, `%${suburb.trim()}%`))
+  }
+
+  if (category && category.trim().length > 0) {
+    const pattern = `%${category.trim()}%`
+    conditions.push(
+      sql`EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements_text(${serviceProviders.services}) AS service
+        WHERE service ILIKE ${pattern}
+      )`,
+    )
   }
 
   if (!sessionUser || sessionUser.role !== 'admin') {
@@ -184,7 +210,11 @@ export async function getProviderById(id: string) {
   return provider
 }
 
-export async function createProvider(input: ProviderCreateInput, ownerId: string) {
+export async function createProvider(
+  input: ProviderCreateInput,
+  ownerId: string,
+  geocoded?: GeocodedLocation | null,
+) {
   const data = providerCreateSchema.parse(input)
   const now = new Date()
   const slug = await generateUniqueProviderSlug(data.name)
@@ -208,6 +238,24 @@ export async function createProvider(input: ProviderCreateInput, ownerId: string
     updatedAt: now,
   }
 
+  if (geocoded) {
+    const latitude = formatCoordinate(geocoded.latitude)
+    const longitude = formatCoordinate(geocoded.longitude)
+
+    if (latitude !== undefined) {
+      values.latitude = latitude
+    }
+
+    if (longitude !== undefined) {
+      values.longitude = longitude
+    }
+
+    const geocodedSuburb = normaliseOptionalString(geocoded.suburb)
+    if (geocodedSuburb !== undefined) {
+      values.suburb = geocodedSuburb
+    }
+  }
+
   const [provider] = await db
     .insert(serviceProviders)
     .values(values)
@@ -216,7 +264,11 @@ export async function createProvider(input: ProviderCreateInput, ownerId: string
   return provider
 }
 
-export async function updateProvider(id: string, input: ProviderUpdateInput) {
+export async function updateProvider(
+  id: string,
+  input: ProviderUpdateInput,
+  geocoded?: GeocodedLocation | null,
+) {
   const data = providerUpdateSchema.parse(input)
   const updates: Partial<InsertServiceProvider> = {
     updatedAt: new Date(),
@@ -269,6 +321,24 @@ export async function updateProvider(id: string, input: ProviderUpdateInput) {
 
   if (data.isVerified !== undefined) {
     updates.isVerified = data.isVerified
+  }
+
+  if (geocoded) {
+    const latitude = formatCoordinate(geocoded.latitude)
+    const longitude = formatCoordinate(geocoded.longitude)
+
+    if (latitude !== undefined) {
+      updates.latitude = latitude
+    }
+
+    if (longitude !== undefined) {
+      updates.longitude = longitude
+    }
+
+    const geocodedSuburb = normaliseOptionalString(geocoded.suburb)
+    if (geocodedSuburb !== undefined) {
+      updates.suburb = geocodedSuburb
+    }
   }
 
   const [provider] = await db

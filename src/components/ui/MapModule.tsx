@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Map, Marker, MapRef } from 'react-map-gl/mapbox'
 import { Button } from './Button'
 import { Maximize2, Minimize2, Navigation, Layers, RotateCcw } from 'lucide-react'
@@ -92,6 +92,14 @@ export function MapModule({
     : false
 
   const shouldAnimate = !reducedMotion && !prefersReducedMotion
+
+  const selectedLocation = useMemo(() => {
+    if (!selectedLocationId) {
+      return null
+    }
+
+    return locations.find((location) => location.id === selectedLocationId) ?? null
+  }, [locations, selectedLocationId])
 
   // SSR fallback component
   const SSRFallback = () => (
@@ -209,6 +217,20 @@ export function MapModule({
     const newClusters = clusterLocations(locations, viewState.zoom)
     setClusters(newClusters)
   }, [locations, viewState.zoom, clusterLocations])
+
+  useEffect(() => {
+    if (!selectedLocation) {
+      return
+    }
+
+    setViewState((prev) => ({
+      ...prev,
+      latitude: selectedLocation.latitude,
+      longitude: selectedLocation.longitude,
+      zoom: Math.max(prev.zoom, 13),
+      transitionDuration: shouldAnimate ? 600 : 0,
+    }))
+  }, [selectedLocation, shouldAnimate])
 
   // Handle marker click
   const handleMarkerClick = useCallback((cluster: ClusterFeature) => {
