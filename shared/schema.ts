@@ -97,7 +97,10 @@ export const subscriptionStatuses = [
 ] as const;
 export type SubscriptionStatus = (typeof subscriptionStatuses)[number];
 
-export const subscriptionPlans = ["free", "plus", "family"] as const;
+export const membershipTiers = ["FREE", "PLUS", "FAMILY"] as const;
+export type MembershipTier = (typeof membershipTiers)[number];
+
+export const subscriptionPlans = membershipTiers;
 export type SubscriptionPlan = (typeof subscriptionPlans)[number];
 
 export const usageScopes = ["global", "user", "business"] as const;
@@ -116,6 +119,10 @@ export const users = pgTable(
       .notNull()
       .default("active")
       .$type<UserStatus>(),
+    membershipTier: varchar("membership_tier", { length: 32 })
+      .notNull()
+      .default("FREE")
+      .$type<MembershipTier>(),
     passwordHash: varchar("password_hash", { length: 255 }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
@@ -130,6 +137,10 @@ export const users = pgTable(
     usersEmailKey: uniqueIndex("users_email_key").on(table.email),
     usersRoleIdx: index("users_role_idx").on(table.role),
     usersStatusIdx: index("users_status_idx").on(table.status),
+    usersMembershipTierCheck: check(
+      "users_membership_tier_check",
+      sql`${table.membershipTier} in ('FREE', 'PLUS', 'FAMILY')`,
+    ),
     usersRoleCheck: check(
       "users_role_check",
       sql`${table.role} in ('member', 'moderator', 'admin')`,
@@ -784,9 +795,9 @@ export const subscriptions = pgTable(
     businessId: uuid("business_id").references(() => businesses.id, {
       onDelete: "set null",
     }),
-    plan: varchar("plan", { length: 32 })
+    currentTier: varchar("current_tier", { length: 32 })
       .notNull()
-      .default("free")
+      .default("FREE")
       .$type<SubscriptionPlan>(),
     status: varchar("status", { length: 32 })
       .notNull()
@@ -823,7 +834,7 @@ export const subscriptions = pgTable(
     ),
     subscriptionsPlanCheck: check(
       "subscriptions_plan_check",
-      sql`${table.plan} in ('free', 'plus', 'family')`,
+      sql`${table.currentTier} in ('FREE', 'PLUS', 'FAMILY')`,
     ),
     subscriptionsStatusCheck: check(
       "subscriptions_status_check",
