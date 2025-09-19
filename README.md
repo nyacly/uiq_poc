@@ -24,7 +24,7 @@ A comprehensive community platform designed for the Ugandan community in Queensl
 
 ### Seeded personas
 
-After the seed runs, list the generated user IDs so you can impersonate them via the dev cookie trick:
+After the seed runs, list the generated user records if you need to inspect seeded data or role assignments:
 
 ```bash
 psql "$DATABASE_URL" -c "select id, email, role from users order by email;"
@@ -35,6 +35,8 @@ psql "$DATABASE_URL" -c "select id, email, role from users order by email;"
 | `admin@uiq.local`  | `admin`     | Platform administrator          |
 | `owner@uiq.local`  | `moderator` | Business owner seeded for demos |
 | `member@uiq.local` | `member`    | Everyday community member       |
+
+Use `/auth/signup` (or `POST /api/auth/signup`) to create credentials for your own accounts, or configure Google OAuth to sign in with an existing email. Server-side routes now rely on NextAuth sessions instead of the development cookie shim.
 
 ---
 
@@ -48,22 +50,13 @@ Both paths should return `{ "status": "ok" }` when the app, database, and third-
 
 ---
 
-## 🔐 Dev session cookie trick
+## 🔐 Authentication flows
 
-The backend trusts the cookie `x-dev-user-id` in development. Drop a seeded user ID into the cookie to masquerade as that account without building a UI flow:
+- **Email & password** – Call `POST /api/auth/signup` (or use `/auth/signup`) with `{ email, password, displayName }` to create an account. Subsequent logins go through NextAuth’s credentials provider.
+- **Google OAuth** – Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. When present, Google appears as a provider on the sign-in page.
+- **Server-side usage** – API routes call `getSessionUser()`/`requireUser()` which resolve the active NextAuth session and load role + membership tier from Postgres.
 
-```js
-// Run in the browser console on http://localhost:5000
-document.cookie = `x-dev-user-id=<uuid-from-users-table>; path=/`;
-```
-
-Reload and all server API routes will treat the request as that user. Remove the override with:
-
-```js
-document.cookie = 'x-dev-user-id=; Max-Age=0; path=/';
-```
-
----
+Automated tests can mint short-lived JWT session cookies the same way as `e2e/api-happy-path.spec.ts` does with `next-auth/jwt`.
 
 ## ✅ Tests & quality gates
 
@@ -75,7 +68,7 @@ document.cookie = 'x-dev-user-id=; Max-Age=0; path=/';
 | Playwright E2E | `npm run test:e2e` |
 | CI-equivalent suite | `npm run test:all` |
 
-Playwright uses the `x-dev-user-id` cookie helper (see `e2e/api-happy-path.spec.ts`) to authenticate requests.
+Playwright composes signed NextAuth session cookies (see `e2e/api-happy-path.spec.ts`) to authenticate requests without bypassing RBAC.
 
 ---
 
@@ -117,6 +110,7 @@ Configure these variables in Vercel → Settings → Environment Variables for *
 | `DATABASE_URL` | Primary Postgres database (Neon/Supabase/RDS/etc.). |
 | `NEXTAUTH_URL` | Full domain of the deployed site. |
 | `NEXTAUTH_SECRET` | 32+ character secret for NextAuth JWTs. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Enable Google OAuth sign-in. |
 | `STRIPE_SECRET_KEY` | Stripe secret key (live mode for production). |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Frontend key for Stripe Elements. |
 | `STRIPE_WEBHOOK_SECRET` | Signature secret from Stripe dashboard. |

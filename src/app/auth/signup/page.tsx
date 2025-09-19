@@ -7,11 +7,10 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card, CardContent } from '@/components/ui/Card'
 import { signUpSchema } from '@/lib/validators'
-import bcrypt from 'bcryptjs'
 
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
-    name: '',
+    displayName: '',
     email: '',
     password: '',
     confirmPassword: ''
@@ -23,37 +22,53 @@ export default function SignUpPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrors({})
+
+    const parsed = signUpSchema.safeParse(formData)
+
+    if (!parsed.success) {
+      const flattened = parsed.error.flatten()
+      const fieldErrors: Record<string, string> = {}
+
+      for (const [key, messages] of Object.entries(flattened.fieldErrors)) {
+        if (messages && messages.length > 0) {
+          fieldErrors[key] = messages[0] ?? ''
+        }
+      }
+
+      if (flattened.formErrors.length > 0) {
+        fieldErrors.general = flattened.formErrors[0] ?? ''
+      }
+
+      setErrors(fieldErrors)
+      return
+    }
+
     setLoading(true)
 
     try {
-      // Validate form data
-      const validatedData = signUpSchema.parse(formData)
-
-      // Create user account
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(validatedData),
+        body: JSON.stringify({
+          email: parsed.data.email,
+          password: parsed.data.password,
+          displayName: parsed.data.displayName,
+        }),
       })
 
       if (response.ok) {
         router.push('/auth/signin?message=Account created successfully')
       } else {
-        const error = await response.json()
-        setErrors({ general: error.message || 'Failed to create account' })
+        const errorBody = await response.json().catch(() => null)
+        const message =
+          (errorBody && (errorBody.error || errorBody.message)) ||
+          'Failed to create account'
+        setErrors({ general: message })
       }
-    } catch (error: any) {
-      if (error.errors) {
-        const fieldErrors: Record<string, string> = {}
-        error.errors.forEach((err: any) => {
-          fieldErrors[err.path[0]] = err.message
-        })
-        setErrors(fieldErrors)
-      } else {
-        setErrors({ general: 'An error occurred. Please try again.' })
-      }
+    } catch {
+      setErrors({ general: 'An error occurred. Please try again.' })
     } finally {
       setLoading(false)
     }
@@ -98,20 +113,20 @@ export default function SignUpPage() {
               )}
 
               <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                  Full Name
+                <label htmlFor="displayName" className="block text-sm font-medium text-gray-700">
+                  Display Name
                 </label>
                 <Input
-                  id="name"
-                  name="name"
+                  id="displayName"
+                  name="displayName"
                   type="text"
                   required
-                  value={formData.name}
+                  value={formData.displayName}
                   onChange={handleChange}
                   className="mt-1"
-                  placeholder="Enter your full name"
+                  placeholder="Enter your display name"
                 />
-                {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+                {errors.displayName && <p className="mt-1 text-sm text-red-600">{errors.displayName}</p>}
               </div>
 
               <div>

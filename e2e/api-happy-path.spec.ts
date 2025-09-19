@@ -1,30 +1,54 @@
 import { test, expect } from '@playwright/test'
 import { randomUUID } from 'crypto'
 import { eq } from 'drizzle-orm'
+import { encode } from 'next-auth/jwt'
 
 import { db, users, subscriptions } from '@/lib/db'
-import type { NewUser, SubscriptionPlan, UserRole, UserStatus } from '@shared/schema'
+import type {
+  NewUser,
+  SubscriptionPlan,
+  UserRole,
+  UserStatus,
+} from '@shared/schema'
 
-const DEV_COOKIE = 'x-dev-user-id'
+const SESSION_COOKIE_NAME = 'next-auth.session-token'
+const AUTH_SECRET = process.env.NEXTAUTH_SECRET ?? 'insecure-development-secret'
+
+process.env.NEXTAUTH_SECRET = AUTH_SECRET
 
 type SessionSummary = {
   id: string
   email: string
   role: UserRole
   status: UserStatus
+  membershipTier: SubscriptionPlan
 }
 
 type UserInsert = NewUser
 
-type AuthHeaders = {
-  cookie: string
+const createSessionCookie = async (user: SessionSummary) =>
+  encode({
+    secret: AUTH_SECRET,
+    token: {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+      membershipTier: user.membershipTier,
+    },
+  })
+
+const buildAuthHeaders = async (user: SessionSummary) => {
+  const token = await createSessionCookie(user)
+
+  return {
+    cookie: `${SESSION_COOKIE_NAME}=${token}`,
+  }
 }
 
-const buildAuthHeaders = (userId: string): AuthHeaders => ({
-  cookie: `${DEV_COOKIE}=${userId}`,
-})
-
-const createTestUser = async (overrides: Partial<UserInsert> = {}): Promise<SessionSummary> => {
+const createTestUser = async (
+  overrides: Partial<UserInsert> = {},
+): Promise<SessionSummary> => {
   const data: UserInsert = {
     ...overrides,
     email: overrides.email ?? `playwright-${randomUUID()}@example.com`,
@@ -42,6 +66,7 @@ const createTestUser = async (overrides: Partial<UserInsert> = {}): Promise<Sess
       email: users.email,
       role: users.role,
       status: users.status,
+      membershipTier: users.membershipTier,
     })
 
   return inserted
@@ -58,6 +83,7 @@ test.describe('Providers API happy path', () => {
     try {
       const owner = await createTestUser()
       createdUsers.push(owner.id)
+      const ownerHeaders = await buildAuthHeaders(owner)
 
       const createResponse = await request.post('/api/providers', {
         data: {
@@ -69,7 +95,7 @@ test.describe('Providers API happy path', () => {
           phone: '+61400000099',
           email: 'plumbing@example.com',
         },
-        headers: buildAuthHeaders(owner.id),
+        headers: ownerHeaders,
       })
 
       expect(createResponse.status()).toBe(201)
@@ -82,7 +108,7 @@ test.describe('Providers API happy path', () => {
       expect(getResponse.status()).toBe(404)
 
       const ownerGetResponse = await request.get(`/api/providers/${providerId}`, {
-        headers: buildAuthHeaders(owner.id),
+        headers: ownerHeaders,
       })
       expect(ownerGetResponse.status()).toBe(200)
       const ownerView = await ownerGetResponse.json()
@@ -93,20 +119,22 @@ test.describe('Providers API happy path', () => {
           description: 'Updated description after QA review.',
           website: 'https://example.com',
         },
-        headers: buildAuthHeaders(owner.id),
+        headers: ownerHeaders,
       })
 
       expect(patchResponse.status()).toBe(200)
       const patchPayload = await patchResponse.json()
-      expect(patchPayload.provider.description).toBe('Updated description after QA review.')
+      expect(patchPayload.provider.description).toBe(
+        'Updated description after QA review.',
+      )
 
       const deleteResponse = await request.delete(`/api/providers/${providerId}`, {
-        headers: buildAuthHeaders(owner.id),
+        headers: ownerHeaders,
       })
       expect(deleteResponse.status()).toBe(204)
 
       const confirmResponse = await request.get(`/api/providers/${providerId}`, {
-        headers: buildAuthHeaders(owner.id),
+        headers: ownerHeaders,
       })
       expect(confirmResponse.status()).toBe(404)
     } finally {
@@ -124,6 +152,7 @@ test.describe('Events API happy path', () => {
     try {
       const organiser = await createTestUser()
       createdUsers.push(organiser.id)
+      const organiserHeaders = await buildAuthHeaders(organiser)
 
       const startAt = new Date(Date.now() + 60 * 60 * 1000).toISOString()
       const endAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
@@ -132,14 +161,15 @@ test.describe('Events API happy path', () => {
         data: {
           title: 'Playwright Launch Party',
           category: 'community',
-          description: 'Gathering to celebrate end-to-end tests passing in production.',
+          description:
+            'Gathering to celebrate end-to-end tests passing in production.',
           startAt,
           endAt,
           locationName: 'QA Hall',
           address: '1 Automation Way, Brisbane QLD',
           tags: ['testing', 'community'],
         },
-        headers: buildAuthHeaders(organiser.id),
+        headers: organiserHeaders,
       })
 
       expect(createResponse.status()).toBe(201)
@@ -148,7 +178,7 @@ test.describe('Events API happy path', () => {
       expect(createPayload.event.title).toBe('Playwright Launch Party')
 
       const listResponse = await request.get('/api/events?limit=20', {
-        headers: buildAuthHeaders(organiser.id),
+        headers: organiserHeaders,
       })
       expect(listResponse.status()).toBe(200)
       const listPayload = await listResponse.json()
@@ -169,17 +199,19 @@ test.describe('Classifieds API happy path', () => {
     try {
       const seller = await createTestUser()
       createdUsers.push(seller.id)
+      const sellerHeaders = await buildAuthHeaders(seller)
 
       const createResponse = await request.post('/api/classifieds', {
         data: {
           title: 'Playwright QA Laptop',
-          description: 'Reliable laptop used exclusively for automated testing demos.',
+          description:
+            'Reliable laptop used exclusively for automated testing demos.',
           category: 'electronics',
           price: 999.99,
           currency: 'AUD',
           location: 'Brisbane',
         },
-        headers: buildAuthHeaders(seller.id),
+        headers: sellerHeaders,
       })
 
       expect(createResponse.status()).toBe(201)
@@ -188,11 +220,13 @@ test.describe('Classifieds API happy path', () => {
       expect(createPayload.classified.title).toBe('Playwright QA Laptop')
 
       const listResponse = await request.get('/api/classifieds', {
-        headers: buildAuthHeaders(seller.id),
+        headers: sellerHeaders,
       })
       expect(listResponse.status()).toBe(200)
       const listPayload = await listResponse.json()
-      const ids = listPayload.classifieds.map((classified: { id: string }) => classified.id)
+      const ids = listPayload.classifieds.map(
+        (classified: { id: string }) => classified.id,
+      )
       expect(ids).toContain(classifiedId)
     } finally {
       for (const id of createdUsers) {
@@ -207,9 +241,16 @@ test.describe('Messaging API happy path', () => {
     const createdUsers: string[] = []
 
     try {
-      const initiator = await createTestUser({ email: `initiator-${randomUUID()}@example.com` })
-      const recipient = await createTestUser({ email: `recipient-${randomUUID()}@example.com` })
+      const initiator = await createTestUser({
+        email: `initiator-${randomUUID()}@example.com`,
+      })
+      const recipient = await createTestUser({
+        email: `recipient-${randomUUID()}@example.com`,
+      })
       createdUsers.push(initiator.id, recipient.id)
+
+      const initiatorHeaders = await buildAuthHeaders(initiator)
+      const recipientHeaders = await buildAuthHeaders(recipient)
 
       const startResponse = await request.post('/api/messages/start', {
         data: {
@@ -217,7 +258,7 @@ test.describe('Messaging API happy path', () => {
           subject: 'Welcome to automated QA',
           firstMessage: 'Hello! This is an automated conversation starter.',
         },
-        headers: buildAuthHeaders(initiator.id),
+        headers: initiatorHeaders,
       })
 
       expect(startResponse.status()).toBe(201)
@@ -230,7 +271,7 @@ test.describe('Messaging API happy path', () => {
         data: {
           body: 'Great to hear from automation! Replying to confirm receipt.',
         },
-        headers: buildAuthHeaders(recipient.id),
+        headers: recipientHeaders,
       })
 
       expect(replyResponse.status()).toBe(201)
@@ -238,7 +279,7 @@ test.describe('Messaging API happy path', () => {
       expect(replyPayload.message.body).toContain('confirm receipt')
 
       const readResponse = await request.get(`/api/messages/${conversationId}`, {
-        headers: buildAuthHeaders(initiator.id),
+        headers: initiatorHeaders,
       })
 
       expect(readResponse.status()).toBe(200)

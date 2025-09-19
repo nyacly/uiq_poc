@@ -12,6 +12,8 @@ export function Header() {
   const [searchQuery, setSearchQuery] = useState('')
   const [isMenuOpen, setIsMenuOpen] = useState(false)
 
+  const isAdmin = session?.user?.role?.toLowerCase() === 'admin'
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchQuery.trim()) {
@@ -121,7 +123,7 @@ export function Header() {
                       >
                         Membership
                       </Link>
-                      {session.user.role === 'ADMIN' && (
+                      {isAdmin && (
                         <Link
                           href="/admin"
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
