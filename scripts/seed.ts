@@ -261,14 +261,14 @@ async function main() {
       membershipEnd.setMonth(membershipEnd.getMonth() + 1)
 
       await tx.insert(schema.memberships).values({
-        user_id: businessOwner.id,
+        userId: businessOwner.id,
         tier: 'plus',
         status: 'active',
-        start_date: membershipStart,
-        end_date: membershipEnd,
-        auto_renew: true,
-        stripe_subscription_id: 'sub_seed_plus_owner',
-        granted_by: adminUser.id,
+        startDate: membershipStart,
+        endDate: membershipEnd,
+        autoRenew: true,
+        stripeSubscriptionId: 'sub_seed_plus_owner',
+        grantedBy: adminUser.id,
         metadata: {
           source: 'seed-script',
           benefits: ['priority_support', 'event_discounts'],

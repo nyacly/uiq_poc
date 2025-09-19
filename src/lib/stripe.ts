@@ -4,7 +4,17 @@
  */
 
 import Stripe from 'stripe'
-import { db, stripe_customers, stripe_products, stripe_prices, stripe_subscriptions, users, businesses, memberships, business_subscriptions } from './db'
+import {
+  db,
+  stripeCustomers,
+  stripeProducts,
+  stripePrices,
+  stripeSubscriptions,
+  users,
+  businesses,
+  memberships,
+  businessSubscriptions,
+} from './db'
 import { eq, and } from 'drizzle-orm'
 
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -208,38 +218,38 @@ export async function grantEntitlements(subscriptionId: string): Promise<void> {
     // Find our database records
     const stripeCustomer = await db
       .select()
-      .from(stripe_customers)
-      .where(eq(stripe_customers.stripe_customer_id, subscription.customer as string))
+      .from(stripeCustomers)
+      .where(eq(stripeCustomers.stripeCustomerId, subscription.customer as string))
       .limit(1)
 
     if (stripeCustomer.length === 0) return
 
     const customer = stripeCustomer[0]
-    const targetUserId = customer.user_id
-    const targetBusinessId = customer.business_id
+    const targetUserId = customer.userId
+    const targetBusinessId = customer.businessId
 
     if (!targetUserId && !targetBusinessId) return
 
     // Store subscription record
-    await db.insert(stripe_subscriptions).values({
-      stripe_subscription_id: subscription.id,
-      stripe_customer_id: subscription.customer as string,
-      stripe_price_id: price.id,
+    await db.insert(stripeSubscriptions).values({
+      stripeSubscriptionId: subscription.id,
+      stripeCustomerId: subscription.customer as string,
+      stripePriceId: price.id,
       status: subscription.status,
-      current_period_start: new Date(subscription.current_period_start * 1000),
-      current_period_end: new Date(subscription.current_period_end * 1000),
-      cancel_at_period_end: subscription.cancel_at_period_end,
-      trial_start: subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
-      trial_end: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
+      currentPeriodStart: new Date(subscription.current_period_start * 1000),
+      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+      cancelAtPeriodEnd: subscription.cancel_at_period_end,
+      trialStart: subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
+      trialEnd: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
       metadata: subscription.metadata
     }).onConflictDoUpdate({
-      target: stripe_subscriptions.stripe_subscription_id,
+      target: stripeSubscriptions.stripeSubscriptionId,
       set: {
         status: subscription.status,
-        current_period_start: new Date(subscription.current_period_start * 1000),
-        current_period_end: new Date(subscription.current_period_end * 1000),
-        cancel_at_period_end: subscription.cancel_at_period_end,
-        updated_at: new Date()
+        currentPeriodStart: new Date(subscription.current_period_start * 1000),
+        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+        cancelAtPeriodEnd: subscription.cancel_at_period_end,
+        updatedAt: new Date()
       }
     })
 
@@ -249,20 +259,20 @@ export async function grantEntitlements(subscriptionId: string): Promise<void> {
 
     if (entitlementType && entitlementValue && targetUserId) {
       await db.insert(memberships).values({
-        user_id: targetUserId,
+        userId: targetUserId,
         tier: entitlementValue,
         status: subscription.status === 'active' ? 'active' : 'inactive',
-        stripe_subscription_id: subscription.id,
-        end_date: new Date(subscription.current_period_end * 1000),
-        auto_renew: !subscription.cancel_at_period_end
+        stripeSubscriptionId: subscription.id,
+        endDate: new Date(subscription.current_period_end * 1000),
+        autoRenew: !subscription.cancel_at_period_end
       }).onConflictDoUpdate({
-        target: memberships.user_id,
+        target: memberships.userId,
         set: {
           tier: entitlementValue,
-          stripe_subscription_id: subscription.id,
-          end_date: new Date(subscription.current_period_end * 1000),
+          stripeSubscriptionId: subscription.id,
+          endDate: new Date(subscription.current_period_end * 1000),
           status: subscription.status === 'active' ? 'active' : 'inactive',
-          updated_at: new Date()
+          updatedAt: new Date()
         }
       })
 
@@ -304,47 +314,47 @@ export async function revokeEntitlements(subscriptionId: string): Promise<void> 
       .update(memberships)
       .set({
         status: 'inactive',
-        updated_at: new Date()
+        updatedAt: new Date()
       })
-      .where(eq(memberships.stripe_subscription_id, subscriptionId))
+      .where(eq(memberships.stripeSubscriptionId, subscriptionId))
 
     // Find affected users and businesses
     const subscription = await db
       .select()
-      .from(stripe_subscriptions)
-      .where(eq(stripe_subscriptions.stripe_subscription_id, subscriptionId))
+      .from(stripeSubscriptions)
+      .where(eq(stripeSubscriptions.stripeSubscriptionId, subscriptionId))
       .limit(1)
 
     if (subscription.length === 0) return
 
     const customer = await db
       .select()
-      .from(stripe_customers)
-      .where(eq(stripe_customers.stripe_customer_id, subscription[0].stripe_customer_id))
+      .from(stripeCustomers)
+      .where(eq(stripeCustomers.stripeCustomerId, subscription[0].stripeCustomerId))
       .limit(1)
 
     if (customer.length === 0) return
 
     // Reset user to free tier
-    if (customer[0].user_id) {
+    if (customer[0].userId) {
       await db
         .update(users)
         .set({
           membership_tier: 'free',
           updated_at: new Date()
         })
-        .where(eq(users.id, customer[0].user_id))
+        .where(eq(users.id, customer[0].userId))
     }
 
     // Reset business to basic plan
-    if (customer[0].business_id) {
+    if (customer[0].businessId) {
       await db
         .update(businesses)
         .set({
           subscription_tier: 'Basic',
           updated_at: new Date()
         })
-        .where(eq(businesses.id, customer[0].business_id))
+        .where(eq(businesses.id, customer[0].businessId))
     }
 
     console.log(`Entitlements revoked for subscription ${subscriptionId}`)
@@ -362,7 +372,7 @@ export async function getUserEntitlements(userId: string): Promise<typeof member
       .from(memberships)
       .where(
         and(
-          eq(memberships.user_id, userId),
+          eq(memberships.userId, userId),
           eq(memberships.status, 'active')
         )
       )
@@ -373,15 +383,15 @@ export async function getUserEntitlements(userId: string): Promise<typeof member
 }
 
 // Get business entitlements
-export async function getBusinessEntitlements(businessId: string): Promise<typeof business_subscriptions.$inferSelect[]> {
+export async function getBusinessEntitlements(businessId: string): Promise<typeof businessSubscriptions.$inferSelect[]> {
   try {
     return await db
       .select()
-      .from(business_subscriptions)
+      .from(businessSubscriptions)
       .where(
         and(
-          eq(business_subscriptions.business_id, businessId),
-          eq(business_subscriptions.status, 'active')
+          eq(businessSubscriptions.businessId, businessId),
+          eq(businessSubscriptions.status, 'active')
         )
       )
   } catch (error) {
@@ -579,22 +589,22 @@ export async function initializeStripeProducts(): Promise<void> {
       }
 
       // Insert/update product in database
-      await db.insert(stripe_products).values({
-        stripe_product_id: stripeProduct.id,
+      await db.insert(stripeProducts).values({
+        stripeProductId: stripeProduct.id,
         name: productDef.name,
         description: productDef.description,
         type: productDef.type,
         tier: productDef.metadata.tier,
         features: [],
-        is_active: true,
-        display_order: 0
+        isActive: true,
+        displayOrder: 0
       }).onConflictDoUpdate({
-        target: stripe_products.stripe_product_id,
+        target: stripeProducts.stripeProductId,
         set: {
           name: productDef.name,
           description: productDef.description,
-          is_active: true,
-          updated_at: new Date()
+          isActive: true,
+          updatedAt: new Date()
         }
       })
 
@@ -645,20 +655,20 @@ export async function initializeStripeProducts(): Promise<void> {
         }
 
         // Insert/update price in database
-        await db.insert(stripe_prices).values({
-          stripe_price_id: stripePrice.id,
-          stripe_product_id: stripeProduct.id,
+        await db.insert(stripePrices).values({
+          stripePriceId: stripePrice.id,
+          stripeProductId: stripeProduct.id,
           amount: priceDef.unitAmount,
           currency: priceDef.currency,
           interval: priceDef.recurringInterval,
-          interval_count: priceDef.recurringIntervalCount,
-          is_active: true
+          intervalCount: priceDef.recurringIntervalCount,
+          isActive: true
         }).onConflictDoUpdate({
-          target: stripe_prices.stripe_price_id,
+          target: stripePrices.stripePriceId,
           set: {
             amount: priceDef.unitAmount,
-            is_active: true,
-            updated_at: new Date()
+            isActive: true,
+            updatedAt: new Date()
           }
         })
       }
@@ -715,26 +725,26 @@ export async function seedStripeProducts(): Promise<void> {
 
     // Simple database seeding with placeholder IDs for development
     for (const productDef of productDefinitions) {
-      await db.insert(stripe_products).values({
-        stripe_product_id: productDef.stripeProductId,
+      await db.insert(stripeProducts).values({
+        stripeProductId: productDef.stripeProductId,
         name: productDef.name,
         description: productDef.description,
         type: productDef.type,
         tier: productDef.metadata.tier,
         features: [],
-        is_active: true,
-        display_order: 0
+        isActive: true,
+        displayOrder: 0
       }).onConflictDoNothing()
 
       for (const priceDef of productDef.prices) {
-        await db.insert(stripe_prices).values({
-          stripe_price_id: priceDef.stripePriceId,
-          stripe_product_id: productDef.stripeProductId,
+        await db.insert(stripePrices).values({
+          stripePriceId: priceDef.stripePriceId,
+          stripeProductId: productDef.stripeProductId,
           amount: priceDef.unitAmount,
           currency: priceDef.currency,
           interval: priceDef.recurringInterval,
-          interval_count: priceDef.recurringIntervalCount,
-          is_active: true
+          intervalCount: priceDef.recurringIntervalCount,
+          isActive: true
         }).onConflictDoNothing()
       }
     }
