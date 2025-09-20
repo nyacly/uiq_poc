@@ -19,6 +19,8 @@ declare module 'next-auth' {
     role: UserRole
     status: UserStatus
     membershipTier: MembershipTier
+    name?: string | null
+    image?: string | null
   }
 }
 

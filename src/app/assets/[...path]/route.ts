@@ -33,8 +33,9 @@ export async function GET(
     const data = await readFile(absolutePath)
     const extension = path.extname(absolutePath)
     const contentType = getMimeTypeFromExtension(extension) ?? 'application/octet-stream'
+    const blob = new Blob([data], { type: contentType })
 
-    return new NextResponse(data, {
+    return new NextResponse(blob, {
       status: 200,
       headers: {
         'Content-Type': contentType,

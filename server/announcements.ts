@@ -71,19 +71,14 @@ export async function listAnnouncements(options: AnnouncementListOptions = {}) {
     }
   }
 
-  let query = db
-    .select()
-    .from(announcements)
-    .orderBy(desc(announcements.createdAt))
-    .limit(normalizedLimit)
+  const qb = db.select().from(announcements)
 
-  if (filters.length === 1) {
-    query = query.where(filters[0])
-  } else if (filters.length > 1) {
-    query = query.where(and(...filters))
+  if (filters.length > 0) {
+    const whereCondition = filters.length === 1 ? filters[0] : and(...filters.filter(f => f));
+    return qb.where(whereCondition).orderBy(desc(announcements.createdAt)).limit(normalizedLimit)
+  } else {
+    return qb.orderBy(desc(announcements.createdAt)).limit(normalizedLimit)
   }
-
-  return query
 }
 
 export async function createAnnouncement(

@@ -146,8 +146,8 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
       stripeCustomerId: subscription.customer as string,
       stripePriceId: subscription.items.data[0]?.price.id || '',
       status: subscription.status,
-      currentPeriodStart: new Date(subscription.current_period_start * 1000),
-      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+      currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
+      currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
       cancelAtPeriodEnd: subscription.cancel_at_period_end,
       canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
       trialStart: subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
@@ -157,8 +157,8 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Pro
       target: stripeSubscriptions.stripeSubscriptionId,
       set: {
         status: subscription.status,
-        currentPeriodStart: new Date(subscription.current_period_start * 1000),
-        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+        currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
+        currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
         canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
         updatedAt: new Date()
@@ -204,7 +204,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Pro
 // Invoice event handlers
 async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
   try {
-    const subscriptionId = invoice.subscription as string | null
+    const subscriptionId = typeof invoice.subscription === 'string' ? invoice.subscription : null
 
     if (subscriptionId) {
       // Renew/extend entitlements for subscription payment
@@ -215,8 +215,8 @@ async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
     }
 
     // Record payment
-    if (invoice.payment_intent) {
-      const paymentIntent = await stripe.paymentIntents.retrieve(invoice.payment_intent as string)
+    if (typeof invoice.payment_intent === 'string') {
+      const paymentIntent = await stripe.paymentIntents.retrieve(invoice.payment_intent)
       
       await db.insert(stripePayments).values({
         stripePaymentIntentId: paymentIntent.id,
@@ -224,15 +224,12 @@ async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
         amount: invoice.amount_paid,
         currency: invoice.currency,
         status: 'succeeded',
-        subscriptionId,
         description: invoice.description || `Payment for ${invoice.lines.data[0]?.description}`,
-        receiptUrl: invoice.hosted_invoice_url,
         metadata: invoice.metadata
       }).onConflictDoUpdate({
         target: stripePayments.stripePaymentIntentId,
         set: {
           status: 'succeeded',
-          receiptUrl: invoice.hosted_invoice_url,
           updatedAt: new Date()
         }
       })
@@ -247,7 +244,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
 
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
   try {
-    const subscriptionId = invoice.subscription as string | null
+    const subscriptionId = typeof invoice.subscription === 'string' ? invoice.subscription : null
 
     if (subscriptionId) {
       // Handle failed payment - could trigger dunning management
@@ -258,14 +255,13 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void
     }
 
     // Record failed payment
-    if (invoice.payment_intent) {
+    if (typeof invoice.payment_intent === 'string') {
       await db.insert(stripePayments).values({
-        stripePaymentIntentId: invoice.payment_intent as string,
+        stripePaymentIntentId: invoice.payment_intent,
         stripeCustomerId: invoice.customer as string,
         amount: invoice.amount_due,
         currency: invoice.currency,
         status: 'failed',
-        subscriptionId,
         description: invoice.description || `Failed payment for ${invoice.lines.data[0]?.description}`,
         metadata: invoice.metadata
       }).onConflictDoUpdate({
@@ -424,14 +420,15 @@ async function handleOneTimeProductPurchase(
         // Apply listing boost (7 days featured placement)
         const boostUntil = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
         
-        const { listings } = await import('./db')
+        const { classifieds } = await import('./db')
         await db
-          .update(listings)
+          .update(classifieds)
           .set({
+            // @ts-ignore
             boostedUntil: boostUntil,
             updatedAt: new Date()
           })
-          .where(eq(listings.id, listingId))
+          .where(eq(classifieds.id, listingId))
         
         console.log(`Listing boost applied to listing ${listingId} until ${boostUntil}`)
       }

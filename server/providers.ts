@@ -185,19 +185,14 @@ export async function listProviders(options: ProviderListOptions = {}) {
     }
   }
 
-  let queryBuilder = db
-    .select()
-    .from(serviceProviders)
-    .orderBy(desc(serviceProviders.createdAt))
-    .limit(Math.max(1, Math.min(MAX_SEARCH_RESULTS, limit)))
+  const qb = db.select().from(serviceProviders)
 
-  if (conditions.length === 1) {
-    queryBuilder = queryBuilder.where(conditions[0])
-  } else if (conditions.length > 1) {
-    queryBuilder = queryBuilder.where(and(...conditions))
+  if (conditions.length > 0) {
+    const whereCondition = conditions.length === 1 ? conditions[0] : and(...conditions.filter(c => c));
+    return qb.where(whereCondition).orderBy(desc(serviceProviders.createdAt)).limit(Math.max(1, Math.min(MAX_SEARCH_RESULTS, limit)))
+  } else {
+    return qb.orderBy(desc(serviceProviders.createdAt)).limit(Math.max(1, Math.min(MAX_SEARCH_RESULTS, limit)))
   }
-
-  return queryBuilder
 }
 
 export async function getProviderById(id: string) {

@@ -4,15 +4,12 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
-  // Server external packages for deployment
-  serverExternalPackages: ['@prisma/client', 'drizzle-orm'],
   
   // Experimental features for optimization
   experimental: {
     webVitalsAttribution: ['CLS', 'LCP'],
-    optimizeCss: false,
   },
   
   // Allowed dev origins to fix cross-origin warnings
