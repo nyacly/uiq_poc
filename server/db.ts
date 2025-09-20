@@ -1,5 +1,5 @@
 import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle, type NeonHttpDatabase } from 'drizzle-orm/neon-serverless';
+import { drizzle, type NeonDatabase } from 'drizzle-orm/neon-serverless';
 import { sql } from 'drizzle-orm';
 import ws from "ws";
 import * as schema from "@shared/schema";
@@ -17,7 +17,7 @@ const isPostgresUrl =
 neonConfig.webSocketConstructor = ws;
 
 let poolInstance: Pool | null = null;
-let dbInstance: NeonHttpDatabase<typeof schema>;
+let dbInstance: NeonDatabase<typeof schema>;
 
 if (isPostgresUrl && connectionString) {
   poolInstance = new Pool({ connectionString });
@@ -39,7 +39,7 @@ if (isPostgresUrl && connectionString) {
         "PostgreSQL connection is not configured. Set POSTGRES_URL (or DATABASE_URL) to a valid PostgreSQL connection string to enable server-side database access.",
       );
     },
-  }) as NeonHttpDatabase<typeof schema>;
+  }) as NeonDatabase<typeof schema>;
 }
 
 export const pool = poolInstance;

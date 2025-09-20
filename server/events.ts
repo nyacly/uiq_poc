@@ -173,19 +173,14 @@ export async function listEvents(options: EventListOptions = {}) {
     }
   }
 
-  let query = db
-    .select()
-    .from(events)
-    .orderBy(asc(events.startAt))
-    .limit(Math.max(1, Math.min(500, limit)))
+  const qb = db.select().from(events)
 
-  if (conditions.length === 1) {
-    query = query.where(conditions[0])
-  } else if (conditions.length > 1) {
-    query = query.where(and(...conditions))
+  if (conditions.length > 0) {
+    const whereCondition = conditions.length === 1 ? conditions[0] : and(...conditions.filter(c => c));
+    return qb.where(whereCondition).orderBy(asc(events.startAt)).limit(Math.max(1, Math.min(500, limit)))
+  } else {
+    return qb.orderBy(asc(events.startAt)).limit(Math.max(1, Math.min(500, limit)))
   }
-
-  return query
 }
 
 export async function getEventById(id: string) {

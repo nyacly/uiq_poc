@@ -226,19 +226,14 @@ export async function listClassifieds(options: ClassifiedListOptions = {}) {
     }
   }
 
-  let queryBuilder = db
-    .select()
-    .from(classifieds)
-    .orderBy(desc(classifieds.createdAt))
-    .limit(Math.max(1, Math.min(100, limit)))
+  const qb = db.select().from(classifieds)
 
-  if (conditions.length === 1) {
-    queryBuilder = queryBuilder.where(conditions[0])
-  } else if (conditions.length > 1) {
-    queryBuilder = queryBuilder.where(and(...conditions))
+  if (conditions.length > 0) {
+    const whereCondition = conditions.length === 1 ? conditions[0] : and(...conditions.filter(c => c));
+    return qb.where(whereCondition).orderBy(desc(classifieds.createdAt)).limit(Math.max(1, Math.min(100, limit)))
+  } else {
+    return qb.orderBy(desc(classifieds.createdAt)).limit(Math.max(1, Math.min(100, limit)))
   }
-
-  return queryBuilder
 }
 
 export async function createClassified(

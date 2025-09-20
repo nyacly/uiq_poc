@@ -25,9 +25,9 @@ const USAGE_CONFIG: Record<UsageKind, UsageConfig> = {
     action: 'create',
     period: 'month',
     limits: {
-      free: 2,
-      plus: null,
-      family: null,
+      FREE: 2,
+      PLUS: null,
+      FAMILY: null,
     },
   },
   announcements: {
@@ -35,9 +35,9 @@ const USAGE_CONFIG: Record<UsageKind, UsageConfig> = {
     action: 'create',
     period: 'month',
     limits: {
-      free: 1,
-      plus: null,
-      family: null,
+      FREE: 1,
+      PLUS: null,
+      FAMILY: null,
     },
   },
   messages: {
@@ -45,14 +45,14 @@ const USAGE_CONFIG: Record<UsageKind, UsageConfig> = {
     action: 'send',
     period: 'day',
     limits: {
-      free: 200,
-      plus: null,
-      family: null,
+      FREE: 200,
+      PLUS: null,
+      FAMILY: null,
     },
   },
 }
 
-const DEFAULT_SUBSCRIPTION_TIER: SubscriptionPlan = 'free'
+const DEFAULT_SUBSCRIPTION_TIER: SubscriptionPlan = 'FREE'
 
 const startOfDayUtc = (reference: Date) => {
   const start = new Date(reference)
@@ -95,7 +95,7 @@ export function checkQuota(tier: SubscriptionPlan, kind: UsageKind): UsageQuota 
 
 export async function getUserSubscriptionTier(userId: string): Promise<SubscriptionPlan> {
   const [subscription] = await db
-    .select({ plan: subscriptions.plan })
+    .select({ plan: subscriptions.currentTier })
     .from(subscriptions)
     .where(
       and(

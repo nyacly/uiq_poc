@@ -207,7 +207,7 @@ export async function listAdminUsers(options: { limit?: number; search?: string 
     conditions.push(ilike(profiles.displayName, pattern))
   }
 
-  let query = db
+  const qb = db
     .select({
       id: users.id,
       email: users.email,
@@ -220,27 +220,34 @@ export async function listAdminUsers(options: { limit?: number; search?: string 
     })
     .from(users)
     .leftJoin(profiles, eq(profiles.userId, users.id))
-    .orderBy(desc(users.createdAt))
-    .limit(limit)
 
-  if (conditions.length === 1) {
-    query = query.where(conditions[0])
-  } else if (conditions.length > 1) {
-    query = query.where(or(...conditions))
+  if (conditions.length > 0) {
+    const whereCondition = conditions.length === 1 ? conditions[0] : or(...conditions);
+    const rows = await qb.where(whereCondition).orderBy(desc(users.createdAt)).limit(limit);
+    return rows.map((row) => ({
+      id: row.id,
+      email: row.email,
+      role: row.role,
+      status: row.status,
+      membershipTier: row.membershipTier,
+      displayName: row.displayName ?? null,
+      lastSignInAt: row.lastSignInAt ?? null,
+      createdAt: row.createdAt,
+    }))
+  } else {
+    const rows = await qb.orderBy(desc(users.createdAt)).limit(limit);
+    return rows.map((row) => ({
+      id: row.id,
+      email: row.email,
+      role: row.role,
+      status: row.status,
+      membershipTier: row.membershipTier,
+      displayName: row.displayName ?? null,
+      lastSignInAt: row.lastSignInAt ?? null,
+      createdAt: row.createdAt,
+    }))
   }
 
-  const rows = await query
-
-  return rows.map((row) => ({
-    id: row.id,
-    email: row.email,
-    role: row.role,
-    status: row.status,
-    membershipTier: row.membershipTier,
-    displayName: row.displayName ?? null,
-    lastSignInAt: row.lastSignInAt ?? null,
-    createdAt: row.createdAt,
-  }))
 }
 
 export async function updateUserRole(userId: string, nextRole: UserRole): Promise<void> {
@@ -280,7 +287,7 @@ export async function listAdminBusinesses(options: { limit?: number; search?: st
     filters.push(ilike(businesses.email, pattern))
   }
 
-  let query = db
+  const qb = db
     .select({
       id: businesses.id,
       name: businesses.name,
@@ -293,27 +300,34 @@ export async function listAdminBusinesses(options: { limit?: number; search?: st
     })
     .from(businesses)
     .innerJoin(users, eq(users.id, businesses.ownerId))
-    .orderBy(desc(businesses.createdAt))
-    .limit(limit)
 
-  if (filters.length === 1) {
-    query = query.where(filters[0])
-  } else if (filters.length > 1) {
-    query = query.where(or(...filters))
+  if (filters.length > 0) {
+    const whereCondition = filters.length === 1 ? filters[0] : or(...filters);
+    const rows = await qb.where(whereCondition).orderBy(desc(businesses.createdAt)).limit(limit);
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      status: row.status,
+      plan: row.plan,
+      ownerId: row.ownerId,
+      ownerEmail: row.ownerEmail,
+      createdAt: row.createdAt,
+    }))
+  } else {
+    const rows = await qb.orderBy(desc(businesses.createdAt)).limit(limit);
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      status: row.status,
+      plan: row.plan,
+      ownerId: row.ownerId,
+      ownerEmail: row.ownerEmail,
+      createdAt: row.createdAt,
+    }))
   }
 
-  const rows = await query
-
-  return rows.map((row) => ({
-    id: row.id,
-    name: row.name,
-    email: row.email,
-    status: row.status,
-    plan: row.plan,
-    ownerId: row.ownerId,
-    ownerEmail: row.ownerEmail,
-    createdAt: row.createdAt,
-  }))
 }
 
 export async function setBusinessVerification(businessId: string, verified: boolean): Promise<BusinessStatus> {

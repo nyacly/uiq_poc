@@ -21,17 +21,7 @@ export async function createEventRsvp(
   const payload = rsvpCreateSchema.parse(input)
 
   const [event] = await db
-    .select({
-      id: events.id,
-      title: events.title,
-      startAt: events.startAt,
-      rsvpDeadline: events.rsvpDeadline,
-      organizerId: events.organizerId,
-      status: events.status,
-      visibility: events.visibility,
-      locationName: events.locationName,
-      address: events.address,
-    })
+    .select()
     .from(events)
     .where(eq(events.id, payload.eventId))
     .limit(1)
@@ -92,27 +82,6 @@ async function sendRsvpNotifications(userId: string, rsvp: Rsvp, event: Event) {
     guestCount: rsvp.guestCount,
     eventUrl,
   })
-
-  const prefs = await getNotificationPreferences(userId)
-
-  if (!prefs.sms) {
-    return
-  }
-
-  const [recipient] = await db
-    .select({ phone: users.phone })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1)
-
-  if (!recipient?.phone) {
-    return
-  }
-
-  await notifySms(
-    recipient.phone,
-    `Your RSVP for ${event.title} is confirmed for ${rsvp.guestCount} guest(s).`,
-  )
 }
 
 export const serializeRsvp = (record: Rsvp) => ({

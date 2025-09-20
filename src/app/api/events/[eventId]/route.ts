@@ -20,12 +20,12 @@ const idSchema = z.string().uuid()
 const RATE_LIMIT_ENDPOINT: Parameters<typeof checkRateLimit>[1] = 'post_event'
 
 type RouteContext = {
-  params: { id: string }
+  params: { eventId: string }
 }
 
 export async function GET(_request: Request, context: RouteContext) {
   try {
-    const idResult = idSchema.safeParse(context.params.id)
+    const idResult = idSchema.safeParse(context.params.eventId)
     if (!idResult.success) {
       return NextResponse.json({ error: 'Invalid event id' }, { status: 400 })
     }
@@ -72,7 +72,7 @@ export async function GET(_request: Request, context: RouteContext) {
 
 export async function PATCH(request: Request, context: RouteContext) {
   try {
-    const idResult = idSchema.safeParse(context.params.id)
+    const idResult = idSchema.safeParse(context.params.eventId)
     if (!idResult.success) {
       return NextResponse.json({ error: 'Invalid event id' }, { status: 400 })
     }
@@ -143,7 +143,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
 export async function DELETE(_request: Request, context: RouteContext) {
   try {
-    const idResult = idSchema.safeParse(context.params.id)
+    const idResult = idSchema.safeParse(context.params.eventId)
     if (!idResult.success) {
       return NextResponse.json({ error: 'Invalid event id' }, { status: 400 })
     }

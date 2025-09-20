@@ -1,6 +1,5 @@
 import { and, asc, eq, gte, lt } from 'drizzle-orm'
 import { Resend } from 'resend'
-import type { Twilio } from 'twilio'
 import { z } from 'zod'
 
 import {
@@ -44,7 +43,6 @@ export type NotificationPreferenceUpdateInput = z.infer<
 type UserNotificationContext = {
   id: string
   email: string | null
-  phone: string | null
   displayName: string | null
   preferences: NotificationPreferences
 }
@@ -73,7 +71,6 @@ async function loadUserNotificationContext(
     .select({
       id: users.id,
       email: users.email,
-      phone: users.phone,
       displayName: profiles.displayName,
       prefs: profiles.notificationPrefs,
     })
@@ -89,7 +86,6 @@ async function loadUserNotificationContext(
   return {
     id: record.id,
     email: record.email,
-    phone: record.phone,
     displayName: record.displayName,
     preferences: normalisePreferences(record.prefs),
   }
@@ -146,9 +142,9 @@ const smsEnabled =
     .split(',')
     .some((value) => value === 'true' || value === '1' || value === 'yes')
 
-let twilioClient: Twilio | null = null
+let twilioClient: any | null = null
 
-async function getTwilioClient(): Promise<Twilio | null> {
+async function getTwilioClient(): Promise<any | null> {
   if (!smsEnabled) {
     return null
   }

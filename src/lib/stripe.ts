@@ -236,8 +236,8 @@ export async function grantEntitlements(subscriptionId: string): Promise<void> {
       stripeCustomerId: subscription.customer as string,
       stripePriceId: price.id,
       status: subscription.status,
-      currentPeriodStart: new Date(subscription.current_period_start * 1000),
-      currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+      currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
+      currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
       cancelAtPeriodEnd: subscription.cancel_at_period_end,
       trialStart: subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
       trialEnd: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
@@ -246,8 +246,8 @@ export async function grantEntitlements(subscriptionId: string): Promise<void> {
       target: stripeSubscriptions.stripeSubscriptionId,
       set: {
         status: subscription.status,
-        currentPeriodStart: new Date(subscription.current_period_start * 1000),
-        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+        currentPeriodStart: new Date((subscription as any).current_period_start * 1000),
+        currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
         updatedAt: new Date()
       }
@@ -260,17 +260,17 @@ export async function grantEntitlements(subscriptionId: string): Promise<void> {
     if (entitlementType && entitlementValue && targetUserId) {
       await db.insert(memberships).values({
         userId: targetUserId,
-        tier: entitlementValue,
+        tier: entitlementValue as any,
         status: subscription.status === 'active' ? 'active' : 'inactive',
         stripeSubscriptionId: subscription.id,
-        endDate: new Date(subscription.current_period_end * 1000),
+        endDate: new Date((subscription as any).current_period_end * 1000),
         autoRenew: !subscription.cancel_at_period_end
       }).onConflictDoUpdate({
         target: memberships.userId,
         set: {
-          tier: entitlementValue,
+          tier: entitlementValue as any,
           stripeSubscriptionId: subscription.id,
-          endDate: new Date(subscription.current_period_end * 1000),
+          endDate: new Date((subscription as any).current_period_end * 1000),
           status: subscription.status === 'active' ? 'active' : 'inactive',
           updatedAt: new Date()
         }
@@ -281,8 +281,8 @@ export async function grantEntitlements(subscriptionId: string): Promise<void> {
         await db
           .update(users)
           .set({
-            membership_tier: entitlementValue,
-            updated_at: new Date()
+            membershipTier: entitlementValue as any,
+            updatedAt: new Date()
           })
           .where(eq(users.id, targetUserId))
       }
@@ -292,8 +292,8 @@ export async function grantEntitlements(subscriptionId: string): Promise<void> {
         await db
           .update(businesses)
           .set({
-            subscription_tier: entitlementValue,
-            updated_at: new Date()
+            plan: entitlementValue as any,
+            updatedAt: new Date()
           })
           .where(eq(businesses.id, targetBusinessId))
       }
@@ -340,8 +340,8 @@ export async function revokeEntitlements(subscriptionId: string): Promise<void> 
       await db
         .update(users)
         .set({
-          membership_tier: 'free',
-          updated_at: new Date()
+          membershipTier: 'FREE',
+          updatedAt: new Date()
         })
         .where(eq(users.id, customer[0].userId))
     }
@@ -351,8 +351,8 @@ export async function revokeEntitlements(subscriptionId: string): Promise<void> 
       await db
         .update(businesses)
         .set({
-          subscription_tier: 'Basic',
-          updated_at: new Date()
+          plan: 'basic',
+          updatedAt: new Date()
         })
         .where(eq(businesses.id, customer[0].businessId))
     }
@@ -660,7 +660,7 @@ export async function initializeStripeProducts(): Promise<void> {
           stripeProductId: stripeProduct.id,
           amount: priceDef.unitAmount,
           currency: priceDef.currency,
-          interval: priceDef.recurringInterval,
+          interval: priceDef.recurringInterval as any,
           intervalCount: priceDef.recurringIntervalCount,
           isActive: true
         }).onConflictDoUpdate({
