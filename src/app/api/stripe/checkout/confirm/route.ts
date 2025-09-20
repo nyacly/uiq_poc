@@ -78,6 +78,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing Stripe customer' }, { status: 400 })
     }
 
+    const potentialOwnerIds = [
+      session.metadata?.userId,
+      session.metadata?.user_id,
+      session.client_reference_id,
+      typeof subscription.metadata?.userId === 'string' ? subscription.metadata.userId : undefined,
+      typeof subscription.metadata?.user_id === 'string' ? subscription.metadata.user_id : undefined,
+    ]
+      .map((value) => (typeof value === 'string' ? value.trim() : ''))
+      .filter((value): value is string => value.length > 0)
+
+    if (!potentialOwnerIds.includes(user.id)) {
+      return NextResponse.json({ error: 'Checkout session does not belong to this user' }, { status: 403 })
+    }
+
     const membershipTier = resolveTier(subscription, session)
     const status = resolveStatus(subscription.status)
     const periodStart = toDate(subscription.current_period_start) ?? new Date()
